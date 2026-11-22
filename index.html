@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<!-- THÈME : data-skin="inst" (institutionnel) ou data-skin="sky" (ciel, design précédent). Changer ce seul attribut suffit. -->
+<html lang="en" data-skin="inst">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meetings à la carte</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600&family=Inter:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: outil d'équipe sobre et direct, comme un bon tableau de bord interne
+   IDEA: un présentoir de cartes-rituels qu'on tire, qu'on demande, puis qu'on épingle au calendrier
+   PICTURE: la grille de cartes elle-même ; le calendrier mensuel en second onglet
+   COLOUR and TYPE: bande ciel #4fb3e8, encre #10223a, orange #ff7a1a pour l'action ; une couleur par catégorie ; Outfit + Inter
+   LAYOUT: bande pôle/produit + langue + rôle, onglets, contenu jusqu'à 1240px, une colonne sous 600px */
+:root{color-scheme:light dark;--bg:light-dark(#f6f9fc,#0b1726);--ink:light-dark(#10223a,#e6eef7);--band:light-dark(#4fb3e8,#12324f);--bandink:light-dark(#10223a,#e6eef7);--mut:light-dark(#4a5e75,#9db0c4);--line:light-dark(#d7e2ec,#21405f);--card:light-dark(#ffffff,#10223a);--soft:light-dark(#e8f4fc,#15304d);--acc:#ff7a1a;--accink:#1d0e00;--ok:light-dark(#17784f,#5fd39c);--ko:light-dark(#b23a0a,#ff9a66);--pend:light-dark(#8a5a00,#ffc46b);
+--f0:light-dark(#1f6fd1,#6aa8f0);--f1:light-dark(#b8357a,#f08cc0);--f2:light-dark(#0e8a7a,#4fd1bd);--f3:light-dark(#a36f00,#f2bd4b);--f4:light-dark(#c0362c,#ff8a7f);--f5:light-dark(#6a48c9,#a993f2);--f6:light-dark(#5d6b7c,#a9b6c4)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Outfit,Inter,sans-serif;font-weight:600;line-height:1.1;margin:0;text-wrap:balance}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 max(4vw,16px)}
+header{background:var(--band);color:var(--bandink);padding:22px 0 0}
+.top{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:end;justify-content:space-between}
+.top h1{font-size:clamp(28px,4vw,40px)}
+.top p{margin:4px 0 0;font-size:15px;opacity:.85;max-width:60ch}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+.ctl label{font-size:13px;font-weight:600}
+.ctl .grp{display:flex;align-items:center;gap:8px}
+select,input,textarea{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px;font-size:16px;width:100%}
+.ctl select{width:auto;min-width:140px;max-width:240px}
+.seg{display:inline-flex;background:color-mix(in srgb,var(--card) 70%,transparent);border-radius:12px;padding:3px}
+.seg button{border:0;background:none;border-radius:9px;padding:8px 12px;min-height:40px;font-weight:600;font-size:14px}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.sp{flex:1}
+.tabs{display:flex;gap:4px;margin-top:18px;overflow-x:auto}
+.tabs button{border:0;background:none;padding:12px 16px;min-height:44px;font-weight:600;border-radius:12px 12px 0 0;white-space:nowrap}
+.tabs button[aria-selected=true]{background:var(--bg);color:var(--ink)}
+.badge[hidden]{display:none}.badge{display:inline-block;min-width:22px;padding:0 6px;margin-left:6px;border-radius:11px;background:var(--acc);color:var(--accink);font-size:12px;line-height:22px;text-align:center}
+main{padding:24px 0 48px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.bar input{flex:1 1 220px;width:auto}
+.flt[hidden]{display:none}.flt{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px}
+.flt>b{font-size:13px;color:var(--mut);margin-right:4px;font-weight:600}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:6px 12px;min-height:36px;font-size:14px}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip[data-fam]:not([data-fam=""])[aria-pressed=true]{background:color-mix(in srgb,var(--fc) 20%,var(--card));color:var(--ink);border-color:var(--fc)}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:9px 14px;min-height:44px;font-weight:600;font-size:14px}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:var(--accink)}
+.btn.ghost{background:none}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+a.btn{display:inline-flex;align-items:center;text-decoration:none;color:inherit}a.btn.pri{color:var(--accink)}
+header .btn{background:color-mix(in srgb,var(--card) 70%,transparent);border-color:transparent;min-height:40px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:16px;margin-top:8px}
+.mc{background:var(--card);border:1px solid var(--line);border-top:5px solid var(--fc,var(--line));border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.mc .fam{font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.fl{display:inline-flex;align-items:center;gap:8px;color:var(--fc);font-weight:600}
+.ico{flex:none;width:30px;height:30px;border-radius:9px;background:color-mix(in srgb,var(--fc) 16%,transparent);color:var(--fc);display:inline-grid;place-items:center}
+.ico svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--fc);display:inline-block;margin-right:6px}
+.mc h3{font-size:21px}
+.mc p{margin:0;font-size:15px}
+.req{font-size:13px;font-weight:600;color:var(--ko);white-space:nowrap}
+.tags{display:flex;flex-wrap:wrap;gap:5px}
+.tag{font-size:12px;border:1px solid var(--line);border-radius:6px;padding:1px 7px;color:var(--mut);white-space:nowrap}
+.tag.scope{border-color:var(--ink);color:var(--ink);font-weight:600}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:14px;margin:0}
+.kv dt{color:var(--mut)}.kv dd{margin:0}
+.stat{font-size:13px;color:var(--mut);background:var(--soft);border-radius:10px;padding:8px 10px}
+.stat b{color:var(--ink);font-weight:600}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:4px}
+.empty{background:var(--card);border:1px dashed var(--line);border-radius:16px;padding:28px;text-align:center}
+.empty p{color:var(--mut);margin:6px 0 16px}
+.views{display:inline-flex;flex-wrap:wrap;gap:4px;background:var(--soft);border-radius:12px;padding:3px;margin-bottom:14px}
+.views button{border:0;background:none;border-radius:9px;padding:8px 14px;min-height:40px;font-weight:600;font-size:14px}
+.views button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.mc.cat{background:color-mix(in srgb,var(--card) 55%,var(--bg));border-style:dashed;border-top-style:solid}
+.flag{font-size:12px;font-weight:600;border-radius:6px;padding:1px 7px;white-space:nowrap}
+.flag.new{background:var(--acc);color:var(--accink)}.flag.dorm{background:color-mix(in srgb,var(--pend) 18%,transparent);color:var(--pend)}
+.trace{font-size:13px;color:var(--mut);margin:0}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:16px}
+.md{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.md h3{font-size:22px}.md p{margin:0;font-size:15px}
+.md .kv{font-size:14px}.md .kv dd{font-weight:600}
+.md .lbl{font-size:12px;font-weight:600;color:var(--mut);text-transform:none;margin-bottom:2px}
+.mlist{display:flex;flex-wrap:wrap;gap:6px}
+.mlist button{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:4px 9px;font-size:13px;min-height:32px}
+.md a{color:inherit;font-size:13px}
+.mlist button.arch{opacity:.55;text-decoration:line-through}
+.mlist button.miss{border-style:dashed;background:none;color:var(--mut)}
+.mlist button.oth{font-style:italic;background:none}
+.mlist button:disabled{cursor:not-allowed;opacity:.45}
+.legend2{font-size:13px;color:var(--mut);margin:-8px 0 18px}
+.intro{max-width:80ch;margin:0 0 18px;font-size:16px}
+.banner{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;background:var(--soft);border-radius:12px;padding:12px 16px;margin:6px 0 4px;font-size:14px}
+section+section{margin-top:28px}
+section>h2{font-size:22px;margin-bottom:12px}
+.rows{display:grid;gap:10px}
+.row{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--fc,var(--line));border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 16px;align-items:center}
+.row h3{font-size:18px}
+.row .meta{font-size:14px;color:var(--mut)}
+.row .why{font-size:15px;margin:4px 0 0}
+.st{font-size:13px;font-weight:600;white-space:nowrap}
+.st.pending{color:var(--pend)}.st.approved{color:var(--ok)}.st.rejected,.st.cancelled{color:var(--ko)}
+.calhead{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.calhead h2{font-size:24px;flex:1;text-transform:capitalize}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--line);gap:1px}
+.cal .dow{background:var(--soft);font-size:13px;font-weight:600;padding:6px 8px;color:var(--mut)}
+.cal .day{background:var(--card);min-height:104px;padding:6px;display:flex;flex-direction:column;gap:4px}
+.cal .day.out{background:var(--bg);opacity:.6}
+.cal .day.today .n{background:var(--acc);color:var(--accink);border-radius:10px;padding:0 7px}
+.cal .n{font-size:13px;font-weight:600;align-self:flex-start}
+.ev{border:0;text-align:left;background:color-mix(in srgb,var(--fc,var(--band)) 15%,var(--card));border-left:3px solid var(--fc,var(--band));border-radius:6px;padding:3px 6px;font-size:12px;line-height:1.3;width:100%}
+.ev time{font-weight:600;white-space:nowrap}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px;font-size:14px}
+.legend span{display:inline-flex;align-items:center;gap:6px;color:var(--fc);font-weight:600}
+.legend .ico{width:24px;height:24px;border-radius:7px}.legend .ico svg{width:15px;height:15px}
+.agenda{margin-top:22px}
+.ov{position:fixed;inset:0;background:rgb(5 15 30/.55);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.ov[hidden]{display:none}
+.dlg{background:var(--card);color:var(--ink);border-radius:18px;width:min(600px,100%);max-height:90vh;overflow:auto;padding:22px}
+.dlg:focus{outline:none}.dlg h2{font-size:24px;margin-bottom:6px}
+.dlg .sub{color:var(--mut);font-size:14px;margin:0 0 16px}
+.f{display:grid;gap:12px}
+.f label{display:grid;gap:4px;font-size:14px;font-weight:600}
+.f .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.f .chk{display:flex;gap:10px;align-items:center;font-weight:500}
+.f .chk input{width:22px;min-height:22px;flex:none}
+.f fieldset{border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:0}
+.f legend{font-size:14px;font-weight:600;padding:0 4px}
+.f .checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:4px 12px}
+.f details{border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.f summary{font-weight:600;font-size:14px;cursor:pointer;min-height:28px}
+.f details[open] summary{margin-bottom:10px}
+.f details>.f{gap:10px}
+.hint{font-size:13px;color:var(--mut);font-weight:400;margin:0}
+textarea{min-height:76px;resize:vertical}
+.dacts{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:18px}
+.dacts .left{margin-right:auto}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;z-index:20;max-width:90vw}
+.toast[hidden]{display:none}
+.note{font-size:13px;color:var(--mut);margin-top:28px}
+.warn{background:var(--soft);border-radius:12px;padding:10px 14px;font-size:14px;margin-bottom:16px}
+@media(max-width:600px){
+ .ctl .grp{width:100%}.ctl select{flex:1;max-width:none}
+ .cal .day{min-height:58px;padding:4px}
+ .cal .dow{padding:4px;font-size:12px;text-align:center}
+ .ev{font-size:0;padding:0;height:8px;border-left-width:0;background:var(--fc,var(--band))}
+ .f .two{grid-template-columns:1fr}
+ .flt{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}.flt .chip,.flt>b{flex:none;white-space:nowrap}
+ .row{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:no-preference){.mc{transition:transform .15s}.mc:hover{transform:translateY(-2px)}}
+/* ===== Thème institutionnel (data-skin="inst") : graphite, une seule couleur d'accent, typographie serrée, densité ===== */
+:root[data-skin=inst]{--bg:light-dark(#f3f4f6,#0a0d12);--ink:light-dark(#0e1116,#e7eaee);--band:#12171e;--bandink:#e7eaee;--mut:light-dark(#5b6472,#94a0ae);--line:light-dark(#d8dce2,#232b36);--card:light-dark(#ffffff,#11161e);--soft:light-dark(#eef0f3,#171d27);--acc:light-dark(#1f5bff,#6b96ff);--accink:light-dark(#ffffff,#05070a);
+ --f0:light-dark(#3b6fb6,#86abdd);--f1:light-dark(#985078,#d6a0bd);--f2:light-dark(#2f7d72,#80c4b9);--f3:light-dark(#86681f,#d3b46e);--f4:light-dark(#a3473f,#e29d96);--f5:light-dark(#62509f,#ab9de0);--f6:light-dark(#5f6b7a,#a6b0bc)}
+[data-skin=inst] body{font:15px/1.5 'IBM Plex Sans',Inter,system-ui,sans-serif}
+[data-skin=inst] h1,[data-skin=inst] h2,[data-skin=inst] h3{font-family:'IBM Plex Sans Condensed','IBM Plex Sans',sans-serif;font-weight:600;letter-spacing:0}
+[data-skin=inst] header{padding:14px 0 0;border-bottom:1px solid #000}
+[data-skin=inst] .top h1{font-size:clamp(22px,2.6vw,28px)}
+[data-skin=inst] .top p{font-size:14px;opacity:.7}
+[data-skin=inst] .ctl{margin-top:12px}
+[data-skin=inst] .ctl label{font-weight:500;color:#aab3bf}
+[data-skin=inst] header select{background:#1a2029;color:#e7eaee;border-color:#2b3440;border-radius:3px;min-height:38px;padding:7px 10px}
+[data-skin=inst] header .btn{background:transparent;border:1px solid #2b3440;color:#e7eaee;border-radius:3px;min-height:38px}
+[data-skin=inst] .seg{background:#1a2029;border-radius:3px;padding:2px}
+[data-skin=inst] .seg button{border-radius:2px;min-height:34px;color:#c3cad3}
+[data-skin=inst] .seg button[aria-pressed=true]{background:var(--acc);color:var(--accink)}
+[data-skin=inst] .tabs{margin-top:12px;gap:0}
+[data-skin=inst] .tabs button{border-radius:0;color:#aab3bf;border-bottom:2px solid transparent;padding:10px 16px}
+[data-skin=inst] .tabs button[aria-selected=true]{background:none;color:#fff;border-bottom-color:var(--acc)}
+[data-skin=inst] .badge{border-radius:2px;color:#fff;background:var(--acc)}
+[data-skin=inst] main{padding-top:18px}
+[data-skin=inst] .views{background:none;border-bottom:1px solid var(--line);border-radius:0;padding:0;gap:0}
+[data-skin=inst] .views button{border-radius:0;border-bottom:2px solid transparent;color:var(--mut);min-height:38px}
+[data-skin=inst] .views button[aria-pressed=true]{background:none;color:var(--ink);border-bottom-color:var(--acc)}
+[data-skin=inst] .mc,[data-skin=inst] .md,[data-skin=inst] .row,[data-skin=inst] .empty,[data-skin=inst] .dlg,[data-skin=inst] .banner,[data-skin=inst] .cal,[data-skin=inst] .warn{border-radius:4px}
+[data-skin=inst] .btn,[data-skin=inst] .chip,[data-skin=inst] select,[data-skin=inst] input,[data-skin=inst] textarea,[data-skin=inst] .mlist button{border-radius:3px}
+[data-skin=inst] .btn{min-height:38px;padding:7px 12px;font-weight:500}
+[data-skin=inst] .chip{min-height:32px;padding:4px 10px;font-size:13px}
+[data-skin=inst] .chip[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+[data-skin=inst] .grid{gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr))}
+[data-skin=inst] .mc{padding:14px;gap:8px;border-top-width:3px;box-shadow:none}
+[data-skin=inst] .mc h3{font-size:18px}
+[data-skin=inst] .mc p{font-size:14px}
+[data-skin=inst] .kv{font-size:13px}
+[data-skin=inst] .ico{width:24px;height:24px;border-radius:3px}[data-skin=inst] .ico svg{width:15px;height:15px}
+[data-skin=inst] .stat,[data-skin=inst] .tag,[data-skin=inst] .flag{border-radius:2px}
+[data-skin=inst] .stat{background:none;border-top:1px solid var(--line);border-radius:0;padding:8px 0 0}
+[data-skin=inst] .cal .day{min-height:92px}
+[data-skin=inst] .cal .day.today .n{border-radius:2px;color:var(--accink)}
+[data-skin=inst] .ev{border-radius:2px}
+[data-skin=inst] .row{padding:12px 14px}
+@media(prefers-reduced-motion:no-preference){[data-skin=inst] .mc:hover{transform:none;border-color:var(--mut)}}
+.login{background:var(--band);align-items:center}
+.login .dlg{width:min(460px,100%)}
+.login .lgl{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+.login .seg{background:var(--soft)}.login .seg button{color:var(--ink)}
+.login .err{color:var(--ko);font-size:14px;margin:0;min-height:1em}
+#coBtn{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+</style>
+</head>
+<body>
+<header>
+ <div class="wrap">
+  <div class="top">
+   <div><h1>Meetings à la carte</h1><p id="sub"></p></div>
+   <div class="seg" role="group" aria-label="Language"><button type="button" data-lang="en">EN</button><button type="button" data-lang="fr">FR</button></div>
+  </div>
+  <div class="ctl">
+   <div class="grp"><label for="pole" id="lPole"></label><select id="pole"></select></div>
+   <div class="grp"><label for="prod" id="lProd"></label><select id="prod"></select></div>
+   <button class="btn" id="addPole" type="button"></button>
+   <button class="btn" id="addProd" type="button"></button>
+   <button class="btn" id="settings" type="button"></button>
+   <button class="btn" id="coBtn" type="button"></button>
+   <span class="sp"></span>
+   <div class="seg" role="group" id="roles"><button type="button" data-role="dev"></button><button type="button" data-role="mgr"></button></div>
+  </div>
+  <nav class="tabs" role="tablist">
+   <button role="tab" data-tab="cards"></button>
+   <button role="tab" data-tab="requests"></button>
+   <button role="tab" data-tab="calendar"></button>
+   <button role="tab" data-tab="methods"></button>
+  </nav>
+ </div>
+</header>
+<main class="wrap">
+ <div id="warn" class="warn" hidden></div>
+ <div id="v-cards">
+  <div class="views" id="views" role="group"></div>
+  <div class="bar"><input id="q" type="search"><button class="btn pri" id="newCard" type="button"></button></div>
+  <div class="flt" id="fams"></div>
+  <div class="flt" id="meths"></div>
+  <div id="grid"></div>
+ </div>
+ <div id="v-requests" hidden></div>
+ <div id="v-calendar" hidden></div>
+ <div id="v-methods" hidden></div>
+ <p class="note" id="foot"></p>
+</main>
+<div class="ov login" id="login" hidden><form class="dlg f" id="loginForm" autocomplete="on">
+ <div class="lgl"><h2>Meetings à la carte</h2><div class="seg" role="group"><button type="button" data-lglang="en">EN</button><button type="button" data-lglang="fr">FR</button></div></div>
+ <p class="sub" id="lgSub"></p>
+ <label><span id="lgCo"></span><input id="lgCompany" name="organization" autocomplete="organization" required></label>
+ <label><span id="lgNm"></span><input id="lgNameIn" name="name" autocomplete="name"></label>
+ <p class="err" id="lgErr"></p>
+ <p class="hint" id="lgWarn"></p>
+ <p class="hint" id="lgDemo" hidden></p>
+ <div class="dacts"><button class="btn pri" id="lgGo"></button></div>
+</form></div>
+<script>
+// ===================== VERSION WEB =====================
+// Configuration Firebase : coller ici l'objet « firebaseConfig » de la console Firebase.
+// Laisser projectId vide = MODE DÉMO : les données restent dans ce navigateur uniquement.
+const FIREBASE_CONFIG = {apiKey:"", authDomain:"", projectId:"", appId:""};
+const FIREBASE_SDK = "10.12.2";
+(function(){
+ const LS={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
+ // « Société Générale », « societe generale » et « SOCIETE-GENERALE » donnent le même espace
+ const slug=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80);
+ let uid=LS.get('mtg.uid');if(!uid){uid='u'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);LS.set('mtg.uid',uid)}
+ let resolveReady;const READY=new Promise(r=>resolveReady=r);
+ let DB=null,members={},resolveMembers;const MEMBERS=new Promise(r=>resolveMembers=r);
+ const USER={id:async()=>uid,can:async()=>true,isOwner:()=>false,canEdit:()=>true,
+  profiles:async ids=>{await Promise.race([MEMBERS,new Promise(r=>setTimeout(r,3000))]);return Object.fromEntries(ids.map(i=>[i,{name:(members[i]||{}).name||''}]))}};
+ // Même interface que celle attendue par la page : claude.use('db'|'user')
+ window.claude={use:n=>READY.then(()=>n==='db'?DB:n==='user'?USER:null)};
+ const demo=!FIREBASE_CONFIG.projectId;
+ window.MTG={uid,slug,LS,demo,company:null};
+
+ // ---------- Mode démo : stockage local, même API ----------
+ function demoDB(t){
+  const KEY='mtg.demo.'+t;const L={};
+  const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return {}}};
+  let D=load();const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}};
+  const snap=c=>({docs:Object.entries(D[c]||{}).map(([id,d])=>({id,exists:true,data:()=>d})),metadata:{fromCache:false,hasPendingWrites:false}});
+  const emit=c=>(L[c]||[]).forEach(f=>f(snap(c)));
+  window.addEventListener('storage',e=>{if(e.key===KEY){D=load();Object.keys(L).forEach(emit)}});
+  const split=p=>{const i=p.indexOf('/');return [p.slice(0,i),p.slice(i+1)]};
+  const clone=o=>JSON.parse(JSON.stringify(o));
+  return {
+   collection:c=>({onSnapshot:(n)=>{(L[c]=L[c]||[]).push(n);setTimeout(()=>n(snap(c)));return()=>{L[c]=L[c].filter(f=>f!==n)}},
+    add:async d=>{const id=Math.random().toString(36).slice(2,12);(D[c]=D[c]||{})[id]=clone(d);save();emit(c);return {id}}}),
+   doc:p=>{const [c,id]=split(p);return {
+    set:async d=>{(D[c]=D[c]||{})[id]=clone(d);save();emit(c)},
+    update:async d=>{if(!D[c]||!D[c][id])throw {code:'invalid_argument',message:'missing'};
+     for(const k in d){if(d[k]&&d[k].__delete__)delete D[c][id][k];else D[c][id][k]=clone(d[k])}save();emit(c)},
+    delete:async()=>{if(D[c])delete D[c][id];save();emit(c)}}}
+  };
+ }
+
+ // ---------- Firebase Firestore : tenants/<entreprise>/<collection>/<document> ----------
+ async function fireDB(t){
+  const base='https://www.gstatic.com/firebasejs/'+FIREBASE_SDK+'/';
+  const A=await import(base+'firebase-app.js');const F=await import(base+'firebase-firestore.js');
+  const app=A.initializeApp(FIREBASE_CONFIG);
+  const fs=F.initializeFirestore(app,{ignoreUndefinedProperties:true});
+  const root='tenants/'+t+'/';
+  const err=e=>({code:e&&e.code==='permission-denied'?'invalid_argument':((e&&e.code)||'unavailable'),message:(e&&e.message)||''});
+  const wrap=s=>({docs:s.docs.map(d=>({id:d.id,exists:true,data:()=>d.data()})),metadata:{fromCache:s.metadata.fromCache,hasPendingWrites:s.metadata.hasPendingWrites}});
+  const guard=fn=>async(...a)=>{try{return await fn(...a)}catch(e){throw err(e)}};
+  const fix=d=>{const o={};for(const k in d)o[k]=(d[k]&&d[k].__delete__)?F.deleteField():d[k];return o};
+  return {
+   collection:c=>({onSnapshot:(n,e)=>F.onSnapshot(F.collection(fs,root+c),s=>n(wrap(s)),x=>e&&e(err(x))),
+    add:guard(async d=>{const r=await F.addDoc(F.collection(fs,root+c),d);return {id:r.id}})}),
+   doc:p=>{const r=F.doc(fs,root+p);return {set:guard(d=>F.setDoc(r,d)),update:guard(d=>F.updateDoc(r,fix(d))),delete:guard(()=>F.deleteDoc(r))}}
+  };
+ }
+
+ async function start(company,name){
+  const t=slug(company);if(!t)return false;
+  LS.set('mtg.company',company);if(name)LS.set('mtg.name',name);
+  try{DB=demo?demoDB(t):await fireDB(t)}catch(e){console.error(e);DB=null}
+  if(DB){
+   DB.collection('members').onSnapshot(s=>{members={};s.docs.forEach(d=>members[d.id]=d.data());resolveMembers()},()=>resolveMembers());
+   const nm=LS.get('mtg.name');if(nm)DB.doc('members/'+uid).set({name:nm,at:new Date().toISOString()}).catch(()=>{});
+  }else resolveMembers();
+  window.MTG.company=company;
+  const lg=document.getElementById('login');if(lg)lg.hidden=true;
+  resolveReady();return true;
+ }
+ window.MTG.start=start;
+ window.MTG.switchCompany=()=>{LS.del('mtg.company');location.reload()};
+})();
+
+</script>
+<script>
+{const LG={
+ en:{sub:'Enter your company name. Everyone who types the same name shares the same poles, products and meetings.',co:'Company name',nm:'Your name (shown on your requests)',warn:'Weak protection: anyone who knows the company name can see and change the data. Do not enter confidential information.',demo:'Demo mode: data stays in this browser until the database is configured.',go:'Enter',err:'Please enter a company name.'},
+ fr:{sub:"Saisissez le nom de votre entreprise. Toutes les personnes qui saisissent le même nom partagent les mêmes pôles, produits et meetings.",co:"Nom de l'entreprise",nm:'Votre nom (affiché sur vos demandes)',warn:"Protection faible : toute personne qui connaît le nom de l'entreprise peut voir et modifier les données. N'y saisissez pas d'information confidentielle.",demo:"Mode démo : les données restent dans ce navigateur tant que la base n'est pas configurée.",go:'Entrer',err:"Saisissez un nom d'entreprise."}};
+ const $=id=>document.getElementById(id);
+ const paint=()=>{const lang=MTG.LS.get('mtg.lang')==='fr'?'fr':'en',L=LG[lang];
+  $('lgSub').textContent=L.sub;$('lgCo').textContent=L.co;$('lgNm').textContent=L.nm;$('lgWarn').textContent=L.warn;$('lgDemo').textContent=L.demo;$('lgDemo').hidden=!MTG.demo;$('lgGo').textContent=L.go;
+  document.querySelectorAll('[data-lglang]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.lglang===lang));return L};
+ let L=paint();
+ document.querySelectorAll('[data-lglang]').forEach(b=>b.addEventListener('click',()=>{MTG.LS.set('mtg.lang',b.dataset.lglang);L=paint()}));
+ $('lgNameIn').value=MTG.LS.get('mtg.name')||'';
+ $('loginForm').addEventListener('submit',async e=>{e.preventDefault();const c=$('lgCompany').value.trim(),n=$('lgNameIn').value.trim();
+  if(!MTG.slug(c)){$('lgErr').textContent=L.err;return}$('lgErr').textContent='';$('lgGo').disabled=true;await MTG.start(c,n);$('lgGo').disabled=false});
+ const saved=MTG.LS.get('mtg.company');
+ if(saved)MTG.start(saved);else{$('login').hidden=false;$('lgCompany').focus()}
+}
+</script>
+<div class="ov" id="ov" hidden><div class="dlg" role="dialog" aria-modal="true" id="dlg" tabindex="-1"></div></div>
+<div class="toast" id="toast" hidden></div>
+<script>
+{
+const CAT=[{"k":"daily","f":"team","l":"product","m":["scrum","less","sas","safe"],"en":["Daily Scrum","15-minute sync of the developers on progress toward the sprint goal and blockers.","Daily","15 min","Developers; SM and PO if needed","Async check-in (board, channel) during quiet periods"],"fr":["Daily Scrum","Point de 15 min des développeurs sur l'avancement vers l'objectif du sprint et les blocages.","Quotidien","15 min","Développeurs ; SM et PO si besoin","Point asynchrone (board, canal) en période calme"]},{"k":"kanban_meeting","f":"team","l":"product","m":["kanban","fl"],"en":["Daily Kanban meeting","Walk the board right to left: ageing items, blockers, flow. Not a status round.","Daily","15 min","Team, service delivery manager","Ageing or blocked item on the board"],"fr":["Kanban meeting quotidien","Revue du board de droite à gauche : éléments vieillissants, blocages, flux. Pas un tour de table.","Quotidien","15 min","Équipe, service delivery manager","Élément vieillissant ou bloqué sur le board"]},{"k":"sprint_planning","f":"team","l":"product","m":["scrum","less","sas","safe"],"en":["Sprint planning","Choose the sprint goal and the backlog items to deliver.","Every sprint (often 2 weeks)","Up to 2 h per sprint week","Scrum team","Start of sprint"],"fr":["Sprint planning","Choisir l'objectif du sprint et les éléments à livrer.","À chaque sprint (souvent 2 semaines)","Jusqu'à 2 h par semaine de sprint","Équipe Scrum","Début de sprint"]},{"k":"refinement","f":"team","l":"product","m":["scrum","less","sas","safe"],"en":["Backlog refinement","Clarify, size and split upcoming items with the people who will build them.","Weekly","1 h","PO, developers","Less than two sprints of ready backlog"],"fr":["Affinage du backlog","Clarifier, estimer et découper les éléments à venir avec ceux qui les réaliseront.","Hebdomadaire","1 h","PO, développeurs","Moins de deux sprints de backlog prêt"]},{"k":"review","f":"team","l":"product","m":["scrum","less","sas","safe"],"en":["Sprint review","Inspect the increment with stakeholders and adapt the backlog.","Every sprint","Up to 1 h per sprint week","Scrum team, business stakeholders","Visible feature delivered"],"fr":["Sprint review","Inspecter l'incrément avec les parties prenantes et adapter le backlog.","À chaque sprint","Jusqu'à 1 h par semaine de sprint","Équipe Scrum, métier","Livraison d'une fonctionnalité visible"]},{"k":"retro","f":"team","l":"product","m":["any"],"en":["Team retrospective","Improve how the team works, with a few tracked actions.","Every sprint or monthly","1 h","The team","Incident, major release, joiner or leaver, open actions"],"fr":["Rétrospective d'équipe","Améliorer le fonctionnement de l'équipe, avec peu d'actions, suivies.","À chaque sprint ou mensuel","1 h","L'équipe","Incident, livraison majeure, arrivée ou départ, actions non soldées"]},{"k":"replenishment","f":"team","l":"product","m":["kanban","fl"],"en":["Replenishment / commitment meeting","Select the next items to pull into the system, within WIP limits.","Weekly (or on demand)","30–45 min","Service delivery manager, team, requesters","Ready queue below threshold"],"fr":["Réapprovisionnement / engagement","Choisir les prochains éléments à faire entrer dans le système, dans les limites de WIP.","Hebdomadaire (ou à la demande)","30–45 min","Service delivery manager, équipe, demandeurs","File « prêt » sous le seuil"]},{"k":"delivery_planning","f":"team","l":"product","m":["kanban"],"en":["Delivery planning","Decide what goes into the next delivery and how it is released.","Per delivery cadence","30 min","Service delivery manager, team, operations","Release window approaching"],"fr":["Planification de livraison","Décider du contenu de la prochaine livraison et de son déploiement.","Au rythme des livraisons","30 min","Service delivery manager, équipe, production","Fenêtre de livraison proche"]},{"k":"three_amigos","f":"team","l":"product","m":["any"],"en":["Three amigos","Align PO, developer and tester on a story before building it.","On demand","30 min","PO, dev, QA","Complex or ambiguous story"],"fr":["Three amigos","Aligner PO, développeur et testeur sur une story avant de la développer.","À la demande","30 min","PO, dev, QA","Story complexe ou ambiguë"]},{"k":"bug_triage","f":"team","l":"product","m":["any"],"en":["Bug triage","Qualify and prioritise open defects.","Weekly","30 min","PO, lead dev, QA","Open-defect threshold exceeded"],"fr":["Tri des anomalies","Qualifier et prioriser les anomalies ouvertes.","Hebdomadaire","30 min","PO, lead dev, QA","Seuil d'anomalies ouvertes dépassé"]},{"k":"tech_debt","f":"team","l":"product","m":["any"],"en":["Tech debt review","Decide which technical debt to pay down, and when.","Monthly","1 h","Lead dev, architect, PO","Debt-related incident, forced upgrade"],"fr":["Revue de dette technique","Arbitrer le remboursement de la dette technique.","Mensuel","1 h","Lead dev, architecte, PO","Incident lié à la dette, montée de version imposée"]},{"k":"customer_touchpoint","f":"discovery","l":"product","m":["pom"],"en":["Customer touchpoint","Short interview or test with a real user, run by the team building the product.","Weekly","30–45 min","Product trio (PM, design, tech lead), one user","New assumption to test, outcome off track"],"fr":["Point client","Entretien ou test court avec un utilisateur réel, mené par l'équipe qui construit le produit.","Hebdomadaire","30–45 min","Trio produit (PM, design, tech lead), un utilisateur","Nouvelle hypothèse à tester, objectif qui dérive"]},{"k":"trio_sync","f":"discovery","l":"product","m":["pom"],"en":["Product trio discovery sync","Update the opportunity map and pick the next assumptions to test.","Weekly","45 min","PM, designer, tech lead","After customer interviews"],"fr":["Synchro discovery du trio","Mettre à jour la carte des opportunités et choisir les prochaines hypothèses à tester.","Hebdomadaire","45 min","PM, designer, tech lead","Après des entretiens clients"]},{"k":"shaping","f":"discovery","l":"product","m":["shapeup"],"en":["Shaping session","Turn a raw idea into a bounded pitch: problem, appetite, solution sketch, no-gos.","As needed, outside the build cycle","1–2 h","Senior product and tech people","Idea worth a bet"],"fr":["Séance de shaping","Transformer une idée brute en pitch borné : problème, appétit, esquisse de solution, hors-périmètre.","Au besoin, hors cycle de build","1 à 2 h","Profils produit et tech seniors","Idée qui mérite un pari"]},{"k":"outcome_review","f":"discovery","l":"product","m":["pom"],"en":["Outcome / OKR check-in","Check progress on the outcomes the team owns and adjust bets.","Monthly","45 min","Product team, product lead","Key result off track"],"fr":["Point objectifs / OKR","Vérifier l'avancement des objectifs portés par l'équipe et ajuster les paris.","Mensuel","45 min","Équipe produit, responsable produit","Résultat clé qui dérive"]},{"k":"pi_planning","f":"coord","l":"pole","m":["safe"],"en":["PI planning","All teams of the train plan the next Planning Interval together.","Every 8–12 weeks","1–2 days","Whole train, Business Owners","Start of PI"],"fr":["PI planning","Toutes les équipes du train planifient ensemble le prochain incrément (PI).","Toutes les 8 à 12 semaines","1 à 2 jours","Tout le train, Business Owners","Début de PI"]},{"k":"art_sync","f":"coord","l":"pole","m":["safe"],"en":["ART sync","Coordinate progress and remove cross-team blockers (combines PO sync and coach sync).","Weekly","1 h","RTE, POs, Scrum Masters / team coaches","Blocking dependency"],"fr":["ART sync","Coordonner l'avancement et lever les blocages entre équipes (réunit PO sync et coach sync).","Hebdomadaire","1 h","RTE, PO, Scrum Masters / coachs","Dépendance bloquante"]},{"k":"pmt","f":"coord","l":"pole","m":["safe","pom"],"en":["PMT – Product Management Team","Align product managers on vision, roadmap and priorities.","Every 2 weeks","1 h","Product managers, RTE, architect","Change in business priority"],"fr":["PMT – Product Management Team","Aligner les product managers sur la vision, la roadmap et les priorités.","Toutes les 2 semaines","1 h","Product managers, RTE, architecte","Changement de priorité métier"]},{"k":"system_demo","f":"coord","l":"pole","m":["safe"],"en":["System demo","Integrated demo of the work of all teams on the train.","End of each iteration","1 h","Train, stakeholders","Significant integration"],"fr":["System demo","Démonstration intégrée du travail de toutes les équipes du train.","Fin de chaque itération","1 h","Train, parties prenantes","Intégration significative"]},{"k":"inspect_adapt","f":"coord","l":"pole","m":["safe"],"en":["Inspect & Adapt","PI system demo, measurement and problem-solving workshop.","End of each PI","Half a day","Whole train","End of PI"],"fr":["Inspect & Adapt","Démo de PI, mesures et atelier de résolution de problèmes.","Fin de chaque PI","½ journée","Tout le train","Fin de PI"]},{"k":"sense_respond","f":"coord","l":"pole","m":["safe"],"en":["Sense & Respond","Shorter learning loop from AI-native SAFe: replaces Inspect & Adapt and folds in system demo activities.","Every iteration","2 h","Train leadership, team representatives","Change in context, AI models or customer needs"],"fr":["Sense & Respond","Boucle d'apprentissage courte de la variante « AI-native » de SAFe : remplace l'Inspect & Adapt et reprend la system demo.","À chaque itération","2 h","Leadership du train, représentants des équipes","Changement de contexte, de modèles d'IA ou de besoins clients"]},{"k":"scaled_daily","f":"coord","l":"pole","m":["sas","safe"],"en":["Scaled Daily Scrum / Scrum of Scrums","One representative per team surfaces impediments and dependencies.","Daily or a few times a week","15 min","One representative per team, SoS master","Cross-team dependency"],"fr":["Scaled Daily Scrum / Scrum of Scrums","Un représentant par équipe remonte obstacles et dépendances.","Quotidien ou quelques fois par semaine","15 min","Un représentant par équipe, SoS master","Dépendance entre équipes"]},{"k":"overall_pbr","f":"coord","l":"pole","m":["less"],"en":["Overall / multi-team refinement","PO and people from all teams refine upcoming items together to reduce dependencies.","Every sprint","1–2 h","Product Owner, members of all teams","Large item touching several teams"],"fr":["Affinage multi-équipes","Le PO et des membres de toutes les équipes affinent ensemble les éléments à venir pour réduire les dépendances.","À chaque sprint","1 à 2 h","Product Owner, membres de toutes les équipes","Gros élément touchant plusieurs équipes"]},{"k":"overall_retro","f":"coord","l":"pole","m":["less"],"en":["Overall retrospective","Improve the system across teams: policies, architecture, tooling.","Every sprint, after team retros","Up to 45 min per sprint week","PO, Scrum Masters, team reps, managers","Recurring cross-team problem"],"fr":["Rétrospective globale","Améliorer le système au-delà des équipes : règles, architecture, outillage.","À chaque sprint, après les rétros d'équipe","Jusqu'à 45 min par semaine de sprint","PO, Scrum Masters, représentants, managers","Problème récurrent entre équipes"]},{"k":"coord_board","f":"coord","l":"pole","m":["fl","kanban"],"en":["Coordination board review (Flight Level 2)","Walk the cross-team board: end-to-end flow of initiatives and dependencies.","Weekly","45 min","Team reps, product and delivery leads","Initiative blocked between teams"],"fr":["Revue du board de coordination (Flight Level 2)","Parcourir le board inter-équipes : flux de bout en bout des initiatives et dépendances.","Hebdomadaire","45 min","Représentants des équipes, responsables produit et delivery","Initiative bloquée entre équipes"]},{"k":"ops_review","f":"coord","l":"pole","m":["kanban"],"en":["Operations review","Balance demand and capacity across services; tackle systemic bottlenecks.","Monthly","1–2 h","Service delivery managers, managers","Service consistently over capacity"],"fr":["Operations review","Équilibrer demande et capacité entre services ; traiter les goulots systémiques.","Mensuel","1 à 2 h","Service delivery managers, managers","Service durablement saturé"]},{"k":"risk_review","f":"coord","l":"pole","m":["kanban"],"en":["Risk review (blocker clustering)","Analyse recurring blockers and delivery risks across services.","Monthly","1 h","Service delivery managers, team reps","Same blocker seen repeatedly"],"fr":["Revue des risques (blocker clustering)","Analyser les blocages récurrents et les risques de livraison entre services.","Mensuel","1 h","Service delivery managers, représentants des équipes","Même blocage observé plusieurs fois"]},{"k":"team_interactions","f":"coord","l":"pole","m":["tt"],"en":["Team interaction review","Check team types, interaction modes (collaboration, X-as-a-Service, facilitation) and cognitive load; plan the next change.","Quarterly","1–2 h","Engineering managers, architects, team leads","New team, overloaded team, long collaboration that should become a service"],"fr":["Revue des interactions d'équipes","Vérifier types d'équipes, modes d'interaction (collaboration, X-as-a-Service, facilitation) et charge cognitive ; préparer la prochaine évolution.","Trimestriel","1 à 2 h","Managers d'ingénierie, architectes, leads","Nouvelle équipe, équipe surchargée, collaboration qui devrait devenir un service"]},{"k":"platform_review","f":"coord","l":"pole","m":["tt","sre"],"en":["Platform customer review","The platform team reviews adoption, friction and roadmap with the stream-aligned teams.","Monthly","1 h","Platform team, stream-aligned team reps","Low adoption, repeated support requests"],"fr":["Revue clients de la plateforme","L'équipe plateforme revoit adoption, irritants et roadmap avec les équipes alignées sur un flux.","Mensuel","1 h","Équipe plateforme, représentants des équipes produit","Faible adoption, demandes de support répétées"]},{"k":"capacity_review","f":"portfolio","l":"pole","m":["any"],"en":["Capacity review","Allocate capacity (FTEs, squads) across domains and track consumption.","Quarterly","2 h","Managers, PMs, IT finance","Capacity / demand gap above threshold"],"fr":["Revue capacitaire","Répartir la capacité (ETP, squads) par domaine et suivre sa consommation.","Trimestriel","2 h","Managers, PM, finance IT","Écart capacité / demande au-delà du seuil"]},{"k":"demand_board","f":"portfolio","l":"pole","m":["any"],"en":["Demand intake board","Qualify business requests before prioritisation.","Every 2 weeks","1 h","PMs, BAs, architect","Significant new request"],"fr":["Comité de la demande","Qualifier les demandes métier avant arbitrage.","Toutes les 2 semaines","1 h","PM, BA, architecte","Nouvelle demande significative"]},{"k":"portfolio_sync","f":"portfolio","l":"pole","m":["safe","fl"],"en":["Portfolio sync","Track portfolio epics, impediments and budget consumption.","Monthly","1–2 h","LPM, product management, RTEs","Epic drifting"],"fr":["Portfolio sync","Suivre les epics de portefeuille, les obstacles et la consommation budgétaire.","Mensuel","1 à 2 h","LPM, product management, RTE","Epic qui dérive"]},{"k":"strategic_portfolio_review","f":"portfolio","l":"pole","m":["safe"],"en":["Strategic portfolio review","Review portfolio vision and strategic themes; decide which epics go ahead.","Quarterly","2–4 h","LPM, Business Owners, enterprise architect","Strategy change"],"fr":["Revue stratégique du portefeuille","Revoir la vision et les thèmes stratégiques ; décider des epics à lancer.","Trimestriel","2 à 4 h","LPM, Business Owners, architecte d'entreprise","Changement de stratégie"]},{"k":"participatory_budgeting","f":"portfolio","l":"pole","m":["safe"],"en":["Participatory budgeting","Stakeholders allocate the portfolio budget across value streams.","About every 6 months (two PIs)","Half a day","Business Owners, LPM, value stream leads","Budget cycle, major reallocation"],"fr":["Budget participatif","Les parties prenantes répartissent le budget du portefeuille entre chaînes de valeur.","Environ tous les 6 mois (deux PI)","½ journée","Business Owners, LPM, responsables de chaînes de valeur","Cycle budgétaire, réallocation majeure"]},{"k":"strategy_review","f":"portfolio","l":"pole","m":["kanban","fl"],"en":["Strategy review (Flight Level 3)","Decide which services or initiatives to pursue, given the market and fitness for purpose.","Quarterly","2–4 h","Senior management, service owners","Market or regulatory change"],"fr":["Revue de stratégie (Flight Level 3)","Décider des services ou initiatives à poursuivre selon le marché et l'adéquation au besoin.","Trimestriel","2 à 4 h","Direction, responsables de services","Évolution du marché ou de la réglementation"]},{"k":"betting_table","f":"portfolio","l":"pole","m":["shapeup"],"en":["Betting table","Senior stakeholders choose which shaped pitches to fund for the next cycle.","Every cycle (6 weeks), during cool-down","1–2 h","Executive sponsors, senior product and tech","End of cycle"],"fr":["Betting table","Les décideurs choisissent les pitches à financer pour le prochain cycle.","À chaque cycle (6 semaines), pendant le cool-down","1 à 2 h","Sponsors, profils produit et tech seniors","Fin de cycle"]},{"k":"metascrum","f":"portfolio","l":"pole","m":["sas"],"en":["Executive MetaScrum","Set strategic priorities and align backlogs across the Scrum of Scrums.","Every sprint","1–2 h","Chief Product Owner, executives, stakeholders","Conflicting priorities between teams"],"fr":["Executive MetaScrum","Fixer les priorités stratégiques et aligner les backlogs du Scrum of Scrums.","À chaque sprint","1 à 2 h","Chief Product Owner, dirigeants, parties prenantes","Priorités contradictoires entre équipes"]},{"k":"eat","f":"portfolio","l":"pole","m":["sas"],"en":["Executive Action Team","Leaders remove organisational impediments the teams cannot solve.","Weekly or every sprint","1 h","Executives with authority over policy and budget","Escalated impediment"],"fr":["Executive Action Team","Les dirigeants lèvent les obstacles organisationnels que les équipes ne peuvent pas lever.","Hebdomadaire ou à chaque sprint","1 h","Dirigeants ayant autorité sur règles et budget","Obstacle escaladé"]},{"k":"steerco","f":"portfolio","l":"pole","m":["any"],"en":["Steering committee","Decisions and trade-offs with the sponsor.","Monthly","1 h","Sponsor, managers, PMs","Major risk, decision beyond delegation"],"fr":["COPIL","Décisions et arbitrages avec le sponsor.","Mensuel","1 h","Sponsor, managers, PM","Risque majeur, décision hors délégation"]},{"k":"qbr","f":"portfolio","l":"pole","m":["any"],"en":["Quarterly business review","Value delivered, outcomes and priorities with the business.","Quarterly","2 h","Business, PMs, managers","End of quarter"],"fr":["QBR métier","Valeur livrée, résultats et priorités avec le métier.","Trimestriel","2 h","Métier, PM, managers","Fin de trimestre"]},{"k":"product_strategy","f":"portfolio","l":"pole","m":["pom"],"en":["Product strategy review","Product leaders decide which problems to solve and set team objectives.","Quarterly","2 h","Head of product, product leads, tech leads","New insight, missed objectives"],"fr":["Revue de stratégie produit","Les responsables produit décident des problèmes à résoudre et fixent les objectifs des équipes.","Trimestriel","2 h","Head of product, responsables produit, tech leads","Nouvel enseignement, objectifs manqués"]},{"k":"design_authority","f":"gov","l":"pole","m":["bank"],"en":["Design Authority","Approve significant architecture decisions.","Every 2 weeks","1 h","Architects, lead devs","New component, new technology, external flow"],"fr":["Design Authority","Valider les choix d'architecture structurants.","Toutes les 2 semaines","1 h","Architectes, lead devs","Nouveau composant, nouvelle techno, flux externe"]},{"k":"cab","f":"gov","l":"pole","m":["bank"],"en":["Change Advisory Board","Approve changes to production.","Weekly","1 h","Change manager, operations, requesters","Planned or emergency change"],"fr":["CAB","Approuver les changements en production.","Hebdomadaire","1 h","Change manager, production, demandeurs","Changement planifié ou urgent"]},{"k":"go_nogo","f":"gov","l":"product","m":["bank"],"en":["Go / No-Go","Decide whether a release goes to production.","Before each release","30 min","PO, operations, QA, security","Release candidate ready"],"fr":["Go / No-Go","Décider de la mise en production d'une release.","Avant chaque MEP","30 min","PO, production, QA, sécurité","Release candidate prête"]},{"k":"security_review","f":"gov","l":"product","m":["bank"],"en":["Security review","Review the product's risks and vulnerabilities.","Monthly","1 h","Security / CISO, lead dev","Critical vulnerability, new external exposure"],"fr":["Revue sécurité","Revue des risques et vulnérabilités du produit.","Mensuel","1 h","Sécurité / CISO, lead dev","Vulnérabilité critique, nouvelle exposition externe"]},{"k":"npa","f":"gov","l":"pole","m":["bank"],"en":["New Product Approval (NPA)","Approve a new product or activity.","On demand","1–2 h","Business, risk, compliance, IT","New product or activity"],"fr":["Comité NPA","Approbation d'un nouveau produit ou d'une nouvelle activité.","À la demande","1 à 2 h","Métier, risques, conformité, IT","Nouveau produit ou nouvelle activité"]},{"k":"audit","f":"gov","l":"pole","m":["bank"],"en":["Audit findings follow-up","Track action plans from audit and internal inspection.","Monthly","1 h","Manager, permanent control","Finding due date"],"fr":["Suivi des recommandations d'audit","Suivre les plans d'action de l'audit et de l'Inspection Générale.","Mensuel","1 h","Manager, contrôle permanent","Échéance d'une recommandation"]},{"k":"dora_ict","f":"gov","l":"pole","m":["bank"],"en":["ICT risk & resilience review (DORA)","ICT risks, incidents and resilience testing; feeds the management body, which is accountable under DORA.","Quarterly","1 h","Operational risk, operations, manager","Major ICT incident, test results"],"fr":["Revue risques ICT & résilience (DORA)","Risques ICT, incidents et tests de résilience ; alimente l'organe de direction, responsable au titre de DORA.","Trimestriel","1 h","Risques opérationnels, production, manager","Incident ICT majeur, résultats de tests"]},{"k":"dora_tpp","f":"gov","l":"pole","m":["bank"],"en":["ICT third-party review (DORA)","Review critical ICT providers: contracts, concentration, exit plans, register of information.","Quarterly","1 h","Vendor management, risk, IT owner","New critical provider, provider incident"],"fr":["Revue des prestataires ICT (DORA)","Revoir les prestataires ICT critiques : contrats, concentration, plans de sortie, registre d'information.","Trimestriel","1 h","Achats / vendor management, risques, responsable IT","Nouveau prestataire critique, incident chez un prestataire"]},{"k":"post_mortem","f":"run","l":"product","m":["any","sre"],"en":["Blameless post-mortem","Analyse an incident's contributing causes without blaming people; agree actions.","After each significant incident","1 h","Team, operations","P1 / P2 incident, large error budget burn"],"fr":["Post-mortem sans blâme","Analyser les causes d'un incident sans mettre en cause les personnes ; décider des actions.","Après chaque incident significatif","1 h","Équipe, production","Incident P1 / P2, forte consommation du budget d'erreur"]},{"k":"slo_review","f":"run","l":"product","m":["sre"],"en":["SLO & error budget review","Check reliability against SLOs and apply the error budget policy (e.g. slow or freeze changes when it runs out).","Every 4 weeks","45 min","Product team, SRE / operations, PO","Fast error budget burn"],"fr":["Revue SLO & budget d'erreur","Mesurer la fiabilité face aux SLO et appliquer la politique de budget d'erreur (ex. ralentir ou geler les changements s'il est épuisé).","Toutes les 4 semaines","45 min","Équipe produit, SRE / production, PO","Budget d'erreur consommé rapidement"]},{"k":"service_delivery_review","f":"run","l":"product","m":["kanban"],"en":["Service delivery review","Check a service's fitness for purpose: lead times, service level expectations, customer feedback.","Every 2 weeks","1 h","Service delivery manager, team, customer representative","Lead time drifting"],"fr":["Service delivery review","Vérifier l'adéquation d'un service : délais, niveaux de service attendus, retours clients.","Toutes les 2 semaines","1 h","Service delivery manager, équipe, représentant client","Délais qui dérivent"]},{"k":"service_review","f":"run","l":"product","m":["any"],"en":["Service review with the business","Review quality of service and SLAs with business users.","Monthly","1 h","Business, PO, operations","SLA missed"],"fr":["Revue de service / SLA","Revue de la qualité de service et des SLA avec le métier.","Mensuel","1 h","Métier, PO, production","SLA non tenu"]},{"k":"problem_review","f":"run","l":"pole","m":["any"],"en":["Problem review","Fix the root causes of recurring incidents.","Monthly","1 h","Problem manager, teams","Recurring incidents"],"fr":["Revue des problèmes","Traiter les causes racines des incidents récurrents.","Mensuel","1 h","Problem manager, équipes","Incidents récurrents"]},{"k":"chapter","f":"people","l":"pole","m":["any"],"en":["Chapter / community of practice","Peers with the same skill share practices and standards across teams.","Monthly","1 h","Peers","Shared technical topic"],"fr":["Chapter / communauté de pratique","Des pairs d'une même expertise partagent pratiques et standards entre équipes.","Mensuel","1 h","Pairs","Sujet technique commun"]},{"k":"one_on_one","f":"people","l":"product","m":["any"],"en":["1:1","Individual check-in between manager and team member.","Every 2 weeks","30 min","Manager, team member","On request"],"fr":["1:1","Échange individuel manager / collaborateur.","Toutes les 2 semaines","30 min","Manager, collaborateur","À la demande"]},{"k":"all_hands","f":"people","l":"pole","m":["any"],"en":["All-hands","Information for the whole pole or product organisation.","Quarterly","1 h","Everyone","Major announcement"],"fr":["All-hands","Information de tout le pôle ou de toute l'organisation produit.","Trimestriel","1 h","Tout le monde","Annonce importante"]}];
+const FAMS=[
+ {k:'team',en:'Team delivery',fr:'Équipe & livraison',i:'<circle cx="9" cy="8" r="3.5"/><circle cx="17" cy="9.5" r="2.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5M15.5 14.6c2.8-.3 5.2 1.3 6 4.4"/>'},
+ {k:'discovery',en:'Product discovery',fr:'Produit & discovery',i:'<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/>'},
+ {k:'coord',en:'Cross-team coordination',fr:'Coordination inter-équipes',i:'<circle cx="5" cy="12" r="2.5"/><circle cx="19" cy="6" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M7.3 11l9.4-4M7.3 13l9.4 4"/>'},
+ {k:'portfolio',en:'Portfolio, strategy & capacity',fr:'Portefeuille, stratégie & capacitaire',i:'<path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/>'},
+ {k:'gov',en:'Governance & compliance',fr:'Gouvernance & conformité',i:'<path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.9-7.5-9.5V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>'},
+ {k:'run',en:'Run & reliability',fr:'Run & fiabilité',i:'<path d="M3 12h4l2.5-6 4 12 2.5-6H21"/>'},
+ {k:'people',en:'People & communities',fr:'Personnes & communautés',i:'<path d="M4 5h16v11H9l-5 4z"/>'}];
+const METH=[
+ {k:'scrum',en:'Scrum',fr:'Scrum'},{k:'kanban',en:'Kanban Method',fr:'Méthode Kanban'},{k:'safe',en:'SAFe',fr:'SAFe'},{k:'less',en:'LeSS',fr:'LeSS'},
+ {k:'sas',en:'Scrum@Scale',fr:'Scrum@Scale'},{k:'fl',en:'Flight Levels',fr:'Flight Levels'},{k:'tt',en:'Team Topologies',fr:'Team Topologies'},
+ {k:'shapeup',en:'Shape Up',fr:'Shape Up'},{k:'pom',en:'Product operating model',fr:'Modèle produit (product operating model)'},{k:'sre',en:'SRE / DevOps',fr:'SRE / DevOps'},{k:'bank',en:'Banking governance',fr:'Gouvernance bancaire'}];
+const T={
+en:{sub:"Ask for the meeting that is useful now; the manager approves it and puts it in the calendar.",pole:'Pole',prod:'Product',wholePole:'Whole pole',addPole:'+ Pole',addProd:'+ Product',settings:'Methods & settings',dev:'Developer',mgr:'Manager',tcards:'Cards',treq:'Requests',tcal:'Calendar',search:'Search meetings…',newCard:'New card',all:'All',famL:'Category',methL:'Method',methRec:'Recommended for {x}',methAll:'All methods',loading:'Loading cards…',noPole:'No pole yet',noPoleTxt:'Create a pole (e.g. Data) and its products (EDMS, Lake…) to start.',noCards:'No cards at this level yet',noCardsTxt:'Start from the reference catalogue or create your own cards.',importBtn:'Import starter kit',createCard:'Create a card',noMatch:'No card matches these filters.',ownBanner:'{p} has no product-level cards yet; only cards from the {o} pole are shown.',freq:'Frequency',dur:'Duration',who:'Who',trig:'Triggers',lvlPole:'Pole {p}',last:'Last held',next:'Next',never:'never',pendingN:'{n} pending',ask:'Request',plan:'Schedule',edit:'Edit',
+ s_pending:'Pending',s_approved:'Scheduled',s_rejected:'Declined',s_cancelled:'Cancelled',approve:'Approve & schedule',reject:'Decline',replan:'Reschedule',cancelM:'Cancel meeting',withdraw:'Withdraw',reqBy:'Requested by {w}',on:' on ',wish:'wanted around {d}',mgrNote:'Manager: ',you:'you',member:'a member',delCard:'Deleted card',
+ secPendMgr:'To approve',secPendDev:'Waiting for approval',emPendMgr:'No pending request.',emPendDev:'No pending request. Pick a card and press “Request”.',secUp:'Upcoming',emUp:'Nothing scheduled yet.',secHist:'Recent history',emHist:'No history yet.',
+ today:'Today',prevM:'Previous month',nextM:'Next month',dows:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],month:'This month',emMonth:'Nothing scheduled this month.',
+ cardNew:'New card',cardEdit:'Edit card',name:'Name',def:'Definition',freqRef:'Reference frequency',parts:'Participants',trigL:'Triggers (when to hold it outside the calendar)',textIn:'Text in {l}',otherLang:'{l} version (optional)',level:'Level',methods:'Methods',crossM:'Cross-method',bankM:'Banking governance',del:'Delete',confDel:'Confirm deletion',cancel:'Cancel',save:'Save',
+ reqT:'Request: {n}',refFreq:'Reference frequency: {f}.',why:'Why now?',whyPh:'E.g. incident last week, major release to prepare…',wishL:'Preferred date (optional)',send:'Send request',
+ planT:'Schedule: {n}',approveT:'Approve & schedule: {n}',replanT:'Reschedule: {n}',direct:'The meeting goes straight into the calendar.',reasonBy:'Reason: {r}, requested by {w}',date:'Date',time:'Time',durMin:'Duration (minutes)',att:'Teams invitees (emails, comma-separated, optional)',noteL:'Note (optional)',notePh:'Room, agenda…',place:'Put in the calendar',placed:'Meeting scheduled',teamsNow:'Create the Teams meeting now: the form opens pre-filled (title, times, description{a}). You just send it.',invAnd:', invitees',later:'Later',addTeams:'Add to Teams',msgTeam:'Message for the team (optional)',back:'Back',close:'Close',reasonL:'Reason:',noteB:'Note:',
+ newPole:'New pole',newProd:'New product',create:'Create',inPole:'Pole',setT:'Settings: {n}',methHintProd:'Leave empty to use the pole methods ({m}).',methHintPole:'Methods drive the “Recommended” filter and the starter kit.',none:'none',
+ impT:'Import starter kit',impHint:'Reference cards for the {lvl} level that match the selected methods, plus cross-method cards. Cards already present are skipped. They go to the catalogue; you then pick your deck.',lvlP:'pole',lvlPr:'product',impGo:'Import {n} cards',
+ vDeck:'Our deck',vCat:'Catalogue',vArch:'Archives',newN:'{n} new',addDeck:'Add to our deck',rmDeck:'Remove from deck',notForUs:'Not for us',isNew:'New',rmBy:'Removed by {w} on {d}',asideBy:'Set aside by {w} on {d}',addedBy:'In the deck since {d} ({w})',dorm:'Dormant — keep it?',dormHint:'Not requested or held for {n} days (threshold: {t} days).',keep:'Keep',emDeck:'Your deck is empty',emDeckTxt:'Open the catalogue and add the meetings your team wants.',openCat:'Open the catalogue',emCat:'Every card is already in your deck.',emArch:'No archived card.',archive:'Archive',restore:'Restore',delPerm:'Delete permanently',confDelPerm:'Confirm: gone for every team, no undo',archBy:'Archived by {w} on {d}',dormSet:'Dormant cards',dormFactor:'Flag after N × the reference frequency',dormDays:'Cards without a regular frequency: flag after (days)',tAdded:'Added to your deck.',tRemoved:'Removed from your deck; still in the catalogue.',tKept:'Kept in the deck.',tArchived:'Card archived.',tRestored:'Card restored to the catalogue.',tAside:'Set aside; still in the catalogue.',
+ tmeth:'Methods',mIntro:'Methods differ on three axes: rhythm (fixed iterations or continuous flow), level (team, several teams, portfolio) and what they optimise. They combine: a method per team, a coordination model across teams, banking governance on top. Cross-method cards (team retrospective, three amigos, post-mortem…) apply to every method and are not repeated below.',mRhythm:'Rhythm',mLevel:'Level',mOpt:'Optimises',mIdea:'Idea',mFit:'Best when',mWatch:'Watch out',mMeet:'Meetings in the catalogue',mSrc:'Reference',mGo:'Open these cards in the catalogue',lvlTeamOpt:'Every team (shared team card)',lvlTeam:'Shared team card',teamNeedsProd:'Team card: select a product to use it.',delProd:'Delete this product',delProdConf:'Confirm: deletes {n}, its {c} own cards, {r} requests and its deck. No undo.',tProdDel:'Product deleted.',delPole:'Delete this pole',delPoleConf:'Confirm: deletes {n}, its {p} products, {c} cards, {r} requests and all decks. No undo.',tPoleDel:'Pole deleted.',mLegend:'Plain: card available here · crossed out: archived · italic: exists in a product (tap to open it there) · dashed: not in this catalogue yet (tap to add it).',mAddT:'Add “{n}” to the {s} catalogue?',mAddTxt:'This card is not in the {s} catalogue yet. It will be copied from the reference catalogue into the catalogue only, not into your deck.',mAddGo:'Add to catalogue',mProdOnly:'Product-level card: select a product to add it.',onlyB:'One card opened from Methods.',showAll:'Show all cards',tAddedCat:'Added to the catalogue.',tSwitched:'Opened in {p}.',
+ tSaved:'Saved.',tCreated:'Card created.',tUpdated:'Card updated.',tSent:'Request sent to the manager.',tSched:'Meeting scheduled.',tWithdrawn:'Request withdrawn.',tDeleted:'Card deleted.',tImported:'{n} cards imported.',tPole:'Pole created.',tProd:'Product created.',eWrite:'Cannot write: shared data unavailable.',ePerm:'You are not allowed to change this data.',eSave:'Save failed ({c}).',eNameDef:'Name and definition are required.',eReason:'Please give a reason.',eDT:'Date and time are required.',
+ foot:'Weak protection by design: anyone who types the same company name sees and edits the same data, and chooses their own role. Do not store confidential information.',coSwitch:'switch',wNoData:'Base de données injoignable. Vérifiez la connexion puis rechargez.',wSlow:'Data is slow to arrive; it may be incomplete.',wRead:'Cannot read data ({c}).'},
+fr:{sub:"Demandez le rituel utile au bon moment ; le manager le valide et le place au calendrier.",pole:'Pôle',prod:'Produit',wholePole:'Tout le pôle',addPole:'+ Pôle',addProd:'+ Produit',settings:'Méthodes & réglages',dev:'Développeur',mgr:'Manager',tcards:'Cartes',treq:'Demandes',tcal:'Calendrier',search:'Rechercher un meeting…',newCard:'Nouvelle carte',all:'Toutes',famL:'Catégorie',methL:'Méthode',methRec:'Recommandées pour {x}',methAll:'Toutes les méthodes',loading:'Chargement des cartes…',noPole:'Aucun pôle',noPoleTxt:'Créez un pôle (ex. Data) et ses produits (EDMS, Lake…) pour commencer.',noCards:'Aucune carte à ce niveau',noCardsTxt:'Partez du catalogue de référence ou créez vos propres cartes.',importBtn:'Importer le kit de départ',createCard:'Créer une carte',noMatch:'Aucune carte ne correspond à ces filtres.',ownBanner:"{p} n'a pas encore de cartes de niveau produit ; seules les cartes du pôle {o} sont affichées.",freq:'Fréquence',dur:'Durée',who:'Qui',trig:'Déclencheurs',lvlPole:'Pôle {p}',last:'Dernière tenue',next:'Prochaine',never:'jamais',pendingN:'{n} en attente',ask:'Demander',plan:'Planifier',edit:'Modifier',
+ s_pending:'En attente',s_approved:'Planifié',s_rejected:'Refusé',s_cancelled:'Annulé',approve:'Valider et planifier',reject:'Refuser',replan:'Re-planifier',cancelM:'Annuler le meeting',withdraw:'Retirer',reqBy:'Demandé par {w}',on:' le ',wish:'souhaité vers le {d}',mgrNote:'Manager : ',you:'vous',member:'un membre',delCard:'Carte supprimée',
+ secPendMgr:'À valider',secPendDev:'En attente de validation',emPendMgr:'Aucune demande en attente.',emPendDev:'Aucune demande en attente. Choisissez une carte et cliquez sur « Demander ».',secUp:'Planifiés à venir',emUp:'Rien de planifié pour le moment.',secHist:'Historique récent',emHist:"Pas encore d'historique.",
+ today:"Aujourd'hui",prevM:'Mois précédent',nextM:'Mois suivant',dows:['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'],month:'Au programme ce mois-ci',emMonth:'Aucun meeting planifié ce mois-ci.',
+ cardNew:'Nouvelle carte',cardEdit:'Modifier la carte',name:'Nom',def:'Définition',freqRef:'Fréquence de référence',parts:'Participants',trigL:'Déclencheurs (quand le tenir hors calendrier)',textIn:'Texte en {l}',otherLang:'Version {l} (facultatif)',level:'Niveau',methods:'Méthodes',crossM:'Toutes méthodes',bankM:'Gouvernance bancaire',del:'Supprimer',confDel:'Confirmer la suppression',cancel:'Annuler',save:'Enregistrer',
+ reqT:'Demander : {n}',refFreq:'Fréquence de référence : {f}.',why:'Pourquoi maintenant ?',whyPh:'Ex. : incident de la semaine dernière, livraison majeure à préparer…',wishL:'Date souhaitée (facultatif)',send:'Envoyer la demande',
+ planT:'Planifier : {n}',approveT:'Valider et planifier : {n}',replanT:'Re-planifier : {n}',direct:'Le meeting est placé directement au calendrier.',reasonBy:'Motif : {r}, demandé par {w}',date:'Date',time:'Heure',durMin:'Durée (minutes)',att:'Invités Teams (e-mails séparés par des virgules, facultatif)',noteL:'Note (facultatif)',notePh:'Salle, ordre du jour…',place:'Placer au calendrier',placed:'Meeting placé au calendrier',teamsNow:"Créez maintenant la réunion dans Teams : le formulaire s'ouvre prérempli (titre, horaires, description{a}), il vous reste à l'envoyer.",invAnd:', invités',later:'Plus tard',addTeams:'Ajouter à Teams',msgTeam:"Message pour l'équipe (facultatif)",back:'Retour',close:'Fermer',reasonL:'Motif :',noteB:'Note :',
+ newPole:'Nouveau pôle',newProd:'Nouveau produit',create:'Créer',inPole:'Pôle',setT:'Réglages : {n}',methHintProd:'Laissez vide pour reprendre les méthodes du pôle ({m}).',methHintPole:'Les méthodes pilotent le filtre « Recommandées » et le kit de départ.',none:'aucune',
+ impT:'Importer le kit de départ',impHint:'Cartes de référence du niveau {lvl} correspondant aux méthodes choisies, plus les cartes toutes méthodes. Les cartes déjà présentes sont ignorées. Elles vont dans le catalogue ; vous choisissez ensuite votre jeu.',lvlP:'pôle',lvlPr:'produit',impGo:'Importer {n} cartes',
+ vDeck:'Notre jeu',vCat:'Catalogue',vArch:'Archives',newN:'{n} nouvelles',addDeck:'Ajouter à notre jeu',rmDeck:'Retirer du jeu',notForUs:'Pas pour nous',isNew:'Nouvelle',rmBy:'Retirée par {w} le {d}',asideBy:'Écartée par {w} le {d}',addedBy:'Dans le jeu depuis le {d} ({w})',dorm:'Dormante — la garder ?',dormHint:'Ni demandée ni tenue depuis {n} jours (seuil : {t} jours).',keep:'Garder',emDeck:'Votre jeu est vide',emDeckTxt:'Ouvrez le catalogue et ajoutez les meetings qui intéressent votre équipe.',openCat:'Ouvrir le catalogue',emCat:'Toutes les cartes sont déjà dans votre jeu.',emArch:'Aucune carte archivée.',archive:'Archiver',restore:'Restaurer',delPerm:'Supprimer définitivement',confDelPerm:'Confirmer : disparaît pour toutes les équipes, sans retour',archBy:'Archivée par {w} le {d}',dormSet:'Cartes dormantes',dormFactor:'Signaler après N × la fréquence de référence',dormDays:'Cartes sans fréquence régulière : signaler après (jours)',tAdded:'Ajoutée à votre jeu.',tRemoved:'Retirée du jeu ; toujours dans le catalogue.',tKept:'Conservée dans le jeu.',tArchived:'Carte archivée.',tRestored:'Carte restaurée dans le catalogue.',tAside:'Écartée ; toujours dans le catalogue.',
+ tmeth:'Méthodes',mIntro:"Les méthodes diffèrent sur trois axes : le rythme (itérations fixes ou flux continu), le niveau (équipe, plusieurs équipes, portefeuille) et ce qu'elles optimisent. Elles se combinent : une méthode par équipe, un modèle de coordination entre équipes, la gouvernance bancaire par-dessus. Les cartes « toutes méthodes » (rétrospective, three amigos, post-mortem…) valent pour chacune et ne sont pas répétées ci-dessous.",mRhythm:'Rythme',mLevel:'Niveau',mOpt:'Optimise',mIdea:'Principe',mFit:'Adaptée quand',mWatch:'Point de vigilance',mMeet:'Meetings du catalogue',mSrc:'Référence',mGo:'Voir ces cartes dans le catalogue',lvlTeamOpt:'Toutes les équipes (carte d’équipe partagée)',lvlTeam:'Carte d’équipe partagée',teamNeedsProd:'Carte d’équipe : sélectionnez un produit pour l’utiliser.',delProd:'Supprimer ce produit',delProdConf:'Confirmer : supprime {n}, ses {c} cartes propres, {r} demandes et son jeu. Sans retour.',tProdDel:'Produit supprimé.',delPole:'Supprimer ce pôle',delPoleConf:'Confirmer : supprime {n}, ses {p} produits, {c} cartes, {r} demandes et tous les jeux. Sans retour.',tPoleDel:'Pôle supprimé.',mLegend:'Normal : carte disponible ici · barrée : archivée · italique : existe dans un produit (toucher pour l’y ouvrir) · pointillés : pas encore dans ce catalogue (toucher pour l’ajouter).',mAddT:'Ajouter « {n} » au catalogue {s} ?',mAddTxt:"Cette carte n'est pas encore dans le catalogue {s}. Elle sera copiée depuis le catalogue de référence, dans le catalogue uniquement, pas dans votre jeu.",mAddGo:'Ajouter au catalogue',mProdOnly:'Carte de niveau produit : sélectionnez un produit pour l’ajouter.',onlyB:'Une carte ouverte depuis Méthodes.',showAll:'Voir toutes les cartes',tAddedCat:'Ajoutée au catalogue.',tSwitched:'Ouverte dans {p}.',
+ tSaved:'Enregistré.',tCreated:'Carte créée.',tUpdated:'Carte mise à jour.',tSent:'Demande envoyée au manager.',tSched:'Meeting planifié.',tWithdrawn:'Demande retirée.',tDeleted:'Carte supprimée.',tImported:'{n} cartes importées.',tPole:'Pôle créé.',tProd:'Produit créé.',eWrite:'Écriture impossible : données partagées indisponibles.',ePerm:"Vous n'avez pas le droit de modifier ces données.",eSave:"Échec de l'enregistrement ({c}).",eNameDef:'Le nom et la définition sont requis.',eReason:'Indiquez le motif de la demande.',eDT:'Date et heure requises.',
+ foot:"Protection faible, voulue : toute personne qui saisit le même nom d'entreprise voit et modifie les mêmes données, et choisit son rôle. N'y stockez pas d'information confidentielle.",coSwitch:'changer',wNoData:'Les données partagées ne sont pas accessibles depuis cette vue (connexion à claude.ai requise).',wSlow:'Les données tardent à arriver ; elles peuvent être incomplètes.',wRead:'Lecture des données impossible ({c}).'}};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const S={only:null,view:'deck',deck:[],poles:[],products:[],cards:[],reqs:[],names:{},pole:null,prod:'',tab:'cards',role:'dev',lang:'en',q:'',fam:'',meth:'rec',month:null,got:{},err:''};
+let db=null,user=null,uid=null,canWrite=true;
+try{S.role=localStorage.getItem('mtg.role')||'dev';S.lang=localStorage.getItem('mtg.lang')||'en';S.pole=localStorage.getItem('mtg.pole');S.prod=localStorage.getItem('mtg.prod')||''}catch(e){}
+const store=(k,v)=>{try{localStorage.setItem('mtg.'+k,v)}catch(e){}};
+const t0=new Date();S.month=new Date(t0.getFullYear(),t0.getMonth(),1);
+const tr=(k,o)=>{let s=(T[S.lang]&&T[S.lang][k])??T.en[k]??k;if(o)for(const x in o)s=s.split('{'+x+'}').join(o[x]);return s};
+const other=()=>S.lang==='en'?'fr':'en';
+const LN={en:{en:'English',fr:'French'},fr:{en:'anglais',fr:'français'}};
+const loc=()=>S.lang==='fr'?'fr-FR':'en-GB';
+const fmtD=s=>{if(!s)return '';const d=new Date(s.length===10?s+'T00:00':s);return isNaN(d)?'':d.toLocaleDateString(loc(),{weekday:'short',day:'numeric',month:'short'})};
+const fmtT=s=>{const d=new Date(s);return S.lang==='fr'?pad(d.getHours())+'h'+pad(d.getMinutes()):pad(d.getHours())+':'+pad(d.getMinutes())};
+const fmtDT=s=>{const d=new Date(s);return isNaN(d)?'':fmtD(s)+(S.lang==='fr'?' à ':', ')+fmtT(s)};
+const isMgr=()=>S.role==='mgr';
+const famOf=k=>FAMS.findIndex(f=>f.k===k);
+const famName=k=>{const i=famOf(k);return i<0?(k||'—'):FAMS[i][S.lang]};
+const fc=k=>{const i=famOf(k);return '--fc:'+(i<0?'var(--mut)':'var(--f'+i+')')};
+const ico=k=>{const i=famOf(k);return `<span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24">${i<0?'<circle cx="12" cy="12" r="6"/>':FAMS[i].i}</svg></span>`};
+const methName=k=>k==='any'?tr('crossM'):k==='bank'?tr('bankM'):((METH.find(m=>m.k===k)||{})[S.lang]||k);
+// Texte d'une carte dans la langue courante, sinon l'autre, sinon les anciens champs
+const tx=(c,f)=>(c&&c.t&&c.t[S.lang]&&c.t[S.lang][f])||(c&&c.t&&c.t[other()]&&c.t[other()][f])||(c&&c[f])||'';
+const poleOf=id=>S.poles.find(p=>p.id===id);
+const prodOf=id=>S.products.find(p=>p.id===id);
+const scopeName=(pole,prod)=>prod?((prodOf(prod)||{}).name||'?'):((poleOf(pole)||{}).name||'?');
+const poleProds=()=>S.products.filter(p=>p.pole===S.pole).sort((a,b)=>String(a.name).localeCompare(b.name));
+const effMethods=()=>{const p=S.prod&&prodOf(S.prod);if(p&&p.methods&&p.methods.length)return p.methods;const po=poleOf(S.pole);return (po&&po.methods)||[]};
+const isTeam=c=>!c.product&&c.level==='team';
+const ownAll=()=>S.cards.filter(c=>c.pole===S.pole&&(S.prod?(c.product===S.prod||isTeam(c)):(!c.product&&!isTeam(c))));
+const ownCards=()=>ownAll().filter(c=>!c.archived);
+const isOwn=c=>c.pole===S.pole&&(S.prod?(c.product===S.prod||isTeam(c)):(!c.product&&!isTeam(c)));
+// Produit auquel rattacher une demande : celui de l'équipe pour une carte d'équipe partagée
+const reqProd=c=>isTeam(c)?(S.prod||null):(c.product||null);
+const reqsFor=c=>S.reqs.filter(r=>r.cardId===c.id&&(!isTeam(c)||r.product===S.prod));
+// Jeu d'équipe : un document par (périmètre, carte) dans la collection "deck"
+const scopeKey=()=>S.prod?'p-'+S.prod:'P-'+S.pole;
+const scopeObj=()=>S.prod?prodOf(S.prod):poleOf(S.pole);
+const deckDoc=c=>S.deck.find(d=>d.scope===scopeKey()&&d.cardId===c.id);
+const inDeck=c=>!!(deckDoc(c)||{}).in;
+const isNew=c=>{const so=scopeObj();return c.origin!==scopeKey()&&!deckDoc(c)&&!inDeck(c)&&!!(so&&so.deckInit&&c.createdAt&&c.createdAt>so.deckInit)};
+const setDeck=(c,inn,extra)=>db.doc('deck/'+scopeKey()+'~'+c.id).set({scope:scopeKey(),cardId:c.id,in:inn,by:uid||null,at:new Date().toISOString(),...(extra||{})});
+// Fréquence de référence → jours (null si « à la demande », « après incident »…)
+function freqDays(c){const s=(tx(c,'frequency')+' '+((c.t&&c.t.en&&c.t.en.frequency)||'')).toLowerCase();let m;
+ if(m=s.match(/(\d+)(?:\s*(?:–|-|à|to)\s*(\d+))?\s*(?:weeks?|semaines?)/))return 7*(+(m[2]||m[1]));
+ if(m=s.match(/(\d+)\s*(?:months?|mois)/))return 30*(+m[1]);
+ if(/daily|quotidien/.test(s))return 1;if(/weekly|hebdo/.test(s))return 7;if(/monthly|mensuel/.test(s))return 30;
+ if(/quarter|trimestr/.test(s))return 91;if(/sprint|iteration|itération/.test(s))return 14;if(/\bpi\b/.test(s))return 84;if(/cycle/.test(s))return 42;return null}
+// Carte dormante : ni demandée, ni tenue, ni confirmée depuis N × sa fréquence (14 jours minimum)
+function dormancy(c){if(!inDeck(c))return null;const so=scopeObj()||{};const f=freqDays(c);
+ const th=f?Math.max(14,f*(+so.dormantFactor||3)):(+so.dormantDays||90);const now=Date.now();
+ const rs=reqsFor(c);const d=deckDoc(c)||{};
+ const ts=[d.at,d.keptAt,...rs.map(r=>r.createdAt),...rs.filter(r=>r.status==='approved'&&r.scheduledAt&&new Date(r.scheduledAt)<=now).map(r=>r.scheduledAt)].filter(Boolean).map(x=>new Date(x).getTime()).filter(x=>!isNaN(x));
+ if(!ts.length)return null;const days=Math.floor((now-Math.max(...ts))/864e5);return days>th?{days,th}:null}
+const scopeCards=()=>S.cards.filter(c=>!c.archived&&c.pole===S.pole&&(S.prod?(!c.product||c.product===S.prod):(!c.product&&!isTeam(c))));
+const scopeReqs=()=>S.reqs.filter(r=>r.pole===S.pole&&(!S.prod||!r.product||r.product===S.prod));
+const cardById=id=>S.cards.find(c=>c.id===id);
+const who=id=>!id?'—':id===uid?tr('you'):(S.names[id]||tr('member'));
+const recommended=c=>{const M=effMethods();if(!M.length)return true;const m=c.methods||[];return m.includes('any')||m.some(x=>M.includes(x))};
+let tt;function toast(m){const e=$('#toast');e.textContent=m;e.hidden=false;clearTimeout(tt);tt=setTimeout(()=>e.hidden=true,3200)}
+async function w(fn,ok){if(!db||!canWrite){toast(tr('eWrite'));return false}
+ try{await fn();if(ok)toast(ok);return true}catch(e){if(e&&e.code==='invalid_argument'){canWrite=false;toast(tr('ePerm'))}else toast(tr('eSave',{c:(e&&e.code)||'error'}));render();return false}}
+// Durée en minutes déduite du texte ("15 min", "1–2 h", "Half a day"…)
+function parseDur(s){s=String(s||'').toLowerCase();let m;
+ if(/jour|day/.test(s))return /½|demi|half/.test(s)?240:480;
+ if(m=s.match(/(\d+)\s*min/))return +m[1];
+ if(m=s.match(/(\d+(?:[.,]\d+)?)(?:\s*(?:à|–|-|to)\s*\d+(?:[.,]\d+)?)?\s*h/))return Math.round(parseFloat(m[1].replace(',','.'))*60);
+ return 60}
+const isoZ=d=>d.toISOString().replace(/\.\d{3}Z$/,'Z');
+// Lien Teams « nouvelle réunion » (documentation Microsoft) ; heures en UTC pour éviter le signe +
+function teamsUrl(r){const c=cardById(r.cardId);const st=new Date(r.scheduledAt);if(isNaN(st))return '';
+ const en=new Date(st.getTime()+(r.durationMin||parseDur(tx(c,'duration')))*6e4);
+ const body=[tx(c,'definition'),r.reason&&(tr('reasonL')+' '+r.reason),r.managerNote&&(tr('noteB')+' '+r.managerNote)].filter(Boolean).join('\n');
+ const q={subject:'['+scopeName(r.pole,r.product)+'] '+(c?tx(c,'name'):'Meeting'),startTime:isoZ(st),endTime:isoZ(en),content:body};
+ const att=String(r.attendees||'').split(/[\s,;]+/).filter(x=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));if(att.length)q.attendees=att.join(',');
+ return 'https://teams.microsoft.com/l/meeting/new?'+Object.entries(q).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&')}
+const teamsBtn=(r,cls)=>{const u=teamsUrl(r);return u?`<a class="btn ${cls||''}" href="${esc(u)}" target="_blank" rel="noopener">${tr('addTeams')}</a>`:''};
+
+/* ---------- rendu ---------- */
+function render(){
+ document.documentElement.lang=S.lang;
+ const poles=[...S.poles].sort((a,b)=>String(a.name).localeCompare(b.name));
+ if(poles.length&&!poles.some(p=>p.id===S.pole))S.pole=poles[0].id;
+ const prods=poleProds();if(S.got.products&&S.prod&&!prods.some(p=>p.id===S.prod))S.prod='';
+ $('#sub').textContent=tr('sub');$('#lPole').textContent=tr('pole');$('#lProd').textContent=tr('prod');
+ $('#addPole').textContent=tr('addPole');$('#addProd').textContent=tr('addProd');$('#settings').textContent=tr('settings');
+ $('#q').placeholder=tr('search');$('#q').setAttribute('aria-label',tr('search'));$('#newCard').textContent=tr('newCard');$('#foot').textContent=tr('foot');if(window.MTG&&MTG.company){$('#coBtn').textContent=MTG.company+(MTG.demo?' (demo)':'')+' · '+tr('coSwitch');}
+ $('[data-role=dev]').textContent=tr('dev');$('[data-role=mgr]').textContent=tr('mgr');
+ $('#pole').innerHTML=poles.length?poles.map(p=>`<option value="${esc(p.id)}"${p.id===S.pole?' selected':''}>${esc(p.name)}</option>`).join(''):`<option>${tr('noPole')}</option>`;
+ $('#prod').innerHTML=`<option value="">${tr('wholePole')}</option>`+prods.map(p=>`<option value="${esc(p.id)}"${p.id===S.prod?' selected':''}>${esc(p.name)}</option>`).join('');
+ document.querySelectorAll('[data-lang]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.lang===S.lang));
+ document.querySelectorAll('[data-role]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.role===S.role));
+ const lab={cards:tr('tcards'),requests:tr('treq'),calendar:tr('tcal'),methods:tr('tmeth')};
+ const np=scopeReqs().filter(r=>r.status==='pending').length;
+ document.querySelectorAll('[data-tab]').forEach(b=>{b.setAttribute('aria-selected',b.dataset.tab===S.tab);b.innerHTML=esc(lab[b.dataset.tab])+(b.dataset.tab==='requests'?`<span class="badge"${np?'':' hidden'}>${np}</span>`:'')});
+ ['cards','requests','calendar','methods'].forEach(k=>$('#v-'+k).hidden=k!==S.tab);
+ const wn=$('#warn');const msg=S.err||(!db&&S.got.ready?tr('wNoData'):'');wn.hidden=!msg;wn.textContent=msg;
+ $('#newCard').disabled=!S.pole||!db;$('#addPole').disabled=!db;$('#addProd').disabled=!db||!S.pole;$('#settings').disabled=!db||!S.pole;
+ drawFilters();drawGrid();drawReqs();drawCal();drawMethods();
+}
+function drawFilters(){
+ $('#fams').innerHTML=`<b>${tr('famL')}</b><button class="chip" data-fam="" aria-pressed="${!S.fam}">${tr('all')}</button>`+FAMS.map(f=>`<button class="chip" data-fam="${f.k}" style="${fc(f.k)}" aria-pressed="${S.fam===f.k}"><span class="dot"></span>${esc(f[S.lang])}</button>`).join('');
+ const M=effMethods();const recLabel=tr('methRec',{x:esc(S.prod?scopeName(S.pole,S.prod):scopeName(S.pole))})+(M.length?' ('+M.map(methName).join(', ')+')':'');
+ $('#meths').hidden=S.view!=='catalog';
+ $('#meths').innerHTML=`<b>${tr('methL')}</b><button class="chip" data-meth="rec" aria-pressed="${S.meth==='rec'}">${recLabel}</button><button class="chip" data-meth="" aria-pressed="${S.meth===''}">${tr('methAll')}</button>`+METH.map(m=>`<button class="chip" data-meth="${m.k}" aria-pressed="${S.meth===m.k}">${esc(m[S.lang])}</button>`).join('');
+}
+function stats(c){
+ const now=new Date();const rs=reqsFor(c);const ap=rs.filter(r=>r.status==='approved'&&r.scheduledAt);
+ const past=ap.filter(r=>new Date(r.scheduledAt)<now).sort((a,b)=>b.scheduledAt.localeCompare(a.scheduledAt))[0];
+ const nx=ap.filter(r=>new Date(r.scheduledAt)>=now).sort((a,b)=>a.scheduledAt.localeCompare(b.scheduledAt))[0];
+ const pend=rs.filter(r=>r.status==='pending').length;
+ return `<div class="stat">${tr('last')} : <b>${past?fmtD(past.scheduledAt):tr('never')}</b> · ${tr('next')} : <b>${nx?fmtDT(nx.scheduledAt):'—'}</b>${pend?' · <b>'+tr('pendingN',{n:pend})+'</b>':''}</div>`.replace(/ : /g,S.lang==='fr'?' : ':': ');
+}
+function drawGrid(){
+ const g=$('#grid');
+ if(!S.got.cards&&(db||!S.got.ready)){$('#views').innerHTML='';g.innerHTML=`<div class="empty"><p>${tr('loading')}</p></div>`;return}
+ if(!S.pole){$('#views').innerHTML='';g.innerHTML=`<div class="empty"><h3>${tr('noPole')}</h3><p>${tr('noPoleTxt')}</p></div>`;return}
+ const all=scopeCards(),deck=all.filter(inDeck),cat=all.filter(c=>!inDeck(c)),arch=ownAll().filter(c=>c.archived);const nNew=cat.filter(isNew).length;
+ $('#views').innerHTML=[['deck',tr('vDeck')+' ('+deck.length+')'],['catalog',tr('vCat')+' ('+cat.length+')'+(nNew?` <span class="flag new">${tr('newN',{n:nNew})}</span>`:'')],['archive',tr('vArch')+' ('+arch.length+')']].map(([k,l])=>`<button type="button" data-view="${k}" aria-pressed="${S.view===k}">${l}</button>`).join('');
+ let head='';
+ if(!all.length&&!arch.length){g.innerHTML=`<div class="empty"><h3>${tr('noCards')}</h3><p>${tr('noCardsTxt')}</p><button class="btn pri" data-act="import"${db?'':' disabled'}>${tr('importBtn')}</button> <button class="btn" data-act="new"${db?'':' disabled'}>${tr('createCard')}</button></div>`;return}
+ if(S.view==='catalog'&&!ownCards().length)head=`<div class="banner"><span>${esc(tr('ownBanner',{p:scopeName(S.pole,S.prod),o:scopeName(S.pole)}))}</span><button class="btn pri" data-act="import"${db?'':' disabled'}>${tr('importBtn')}</button></div>`;
+ if(S.only){const c=S.cards.find(x=>x.id===S.only);if(c){g.innerHTML=`<div class="banner"><span>${tr('onlyB')}</span><button class="btn" data-showall>${tr('showAll')}</button></div><div class="grid">${cardHtml(c)}</div>`;return}S.only=null}
+ const base=S.view==='deck'?deck:S.view==='catalog'?cat:arch;
+ if(!base.length){g.innerHTML=head+(S.view==='deck'?`<div class="empty"><h3>${tr('emDeck')}</h3><p>${tr('emDeckTxt')}</p><button class="btn pri" data-view="catalog">${tr('openCat')}</button></div>`:`<div class="empty"><p>${S.view==='catalog'?tr('emCat'):tr('emArch')}</p></div>`);return}
+ const q=S.q.trim().toLowerCase();
+ const list=base.filter(c=>(!S.fam||c.family===S.fam)&&(S.view!=='catalog'||(S.meth==='rec'?recommended(c):!S.meth||(c.methods||[]).includes(S.meth)))&&(!q||[tx(c,'name'),tx(c,'definition'),tx(c,'triggers')].join(' ').toLowerCase().includes(q)))
+  .sort((a,b)=>(S.view==='catalog'?(isNew(b)-isNew(a)):0)||(famOf(a.family)-famOf(b.family))||(!!a.product-!!b.product)||tx(a,'name').localeCompare(tx(b,'name'),S.lang));
+ if(!list.length){g.innerHTML=head+`<div class="empty"><p>${tr('noMatch')}</p></div>`;return}
+ g.innerHTML=head+'<div class="grid">'+list.map(c=>cardHtml(c)).join('')+'</div>';
+}
+function cardHtml(c){
+ const mt=(c.methods||[]).filter(m=>m!=='any');const v=S.view,id=esc(c.id),d=deckDoc(c);const dz=v==='deck'?dormancy(c):null;
+ let flags=(v==='catalog'&&isNew(c)?` <span class="flag new">${tr('isNew')}</span>`:'');
+ let trace='',acts='';
+ if(v==='deck'){
+  acts=(isMgr()?`<button class="btn pri" data-act="plan" data-id="${id}">${tr('plan')}</button>`:`<button class="btn pri" data-act="ask" data-id="${id}">${tr('ask')}</button>`)+`<button class="btn" data-act="edit" data-id="${id}">${tr('edit')}</button>`;
+  if(dz)acts+=`<button class="btn" data-act="keep" data-id="${id}">${tr('keep')}</button>`;
+  if(isMgr())acts+=`<button class="btn ghost" data-act="rmdeck" data-id="${id}">${tr('rmDeck')}</button>`;
+  if(d&&d.in&&d.at)trace=`<p class="trace">${esc(tr('addedBy',{d:fmtD(d.at),w:who(d.by)}))}</p>`;
+ }else if(v==='catalog'){
+  acts=`<button class="btn pri" data-act="adddeck" data-id="${id}">${tr('addDeck')}</button>`+(isNew(c)?`<button class="btn ghost" data-act="aside" data-id="${id}">${tr('notForUs')}</button>`:'')+`<button class="btn" data-act="edit" data-id="${id}">${tr('edit')}</button>`;
+  if(d&&!d.in&&d.at)trace=`<p class="trace">${esc(tr(d.aside?'asideBy':'rmBy',{w:who(d.by),d:fmtD(d.at)}))}</p>`;
+ }else{
+  trace=c.archivedAt?`<p class="trace">${esc(tr('archBy',{w:who(c.archivedBy),d:fmtD(c.archivedAt)}))}</p>`:'';
+  if(isMgr())acts=`<button class="btn pri" data-act="restore" data-id="${id}">${tr('restore')}</button><button class="btn ghost" data-act="purge" data-id="${id}">${tr('delPerm')}</button>`;
+ }
+ return `<article class="mc${v==='deck'?'':' cat'}" style="${fc(c.family)}">
+  <div class="fam"><span class="fl">${ico(c.family)}${esc(famName(c.family))}</span><span>${flags}</span></div>
+  <h3>${esc(tx(c,'name'))}</h3>
+  ${dz?`<div><span class="flag dorm">${tr('dorm')}</span> <span class="trace">${esc(tr('dormHint',{n:dz.days,t:dz.th}))}</span></div>`:''}
+  ${(S.prod&&!c.product)||mt.length?`<div class="tags">${S.prod&&!c.product?`<span class="tag scope">${esc(isTeam(c)?tr('lvlTeam'):tr('lvlPole',{p:scopeName(c.pole)}))}</span>`:''}${mt.map(m=>`<span class="tag">${esc(methName(m))}</span>`).join('')}</div>`:''}
+  <p>${esc(tx(c,'definition'))}</p>
+  <dl class="kv"><dt>${tr('freq')}</dt><dd>${esc(tx(c,'frequency'))||'—'}</dd><dt>${tr('dur')}</dt><dd>${esc(tx(c,'duration'))||'—'}</dd><dt>${tr('who')}</dt><dd>${esc(tx(c,'participants'))||'—'}</dd><dt>${tr('trig')}</dt><dd>${esc(tx(c,'triggers'))||'—'}</dd></dl>
+  ${v==='deck'?stats(c):''}${trace}
+  ${acts?`<div class="acts">${acts}</div>`:''}
+ </article>`;
+}
+function reqRow(r){
+ const c=cardById(r.cardId);const nm=c?tx(c,'name'):tr('delCard');
+ let acts='';
+ if(r.status==='approved'&&new Date(r.scheduledAt)>=new Date())acts+=teamsBtn(r);
+ if(isMgr()&&r.status==='pending')acts+=`<button class="btn pri" data-act="approve" data-id="${esc(r.id)}">${tr('approve')}</button><button class="btn" data-act="reject" data-id="${esc(r.id)}">${tr('reject')}</button>`;
+ else if(isMgr()&&r.status==='approved')acts+=`<button class="btn" data-act="approve" data-id="${esc(r.id)}">${tr('replan')}</button><button class="btn" data-act="cancel" data-id="${esc(r.id)}">${tr('cancelM')}</button>`;
+ if(!isMgr()&&r.status==='pending'&&r.requestedBy===uid)acts+=`<button class="btn ghost" data-act="withdraw" data-id="${esc(r.id)}">${tr('withdraw')}</button>`;
+ return `<div class="row" style="${fc(c&&c.family)}"><div><h3>${esc(nm)} <span class="tag">${esc(scopeName(r.pole,r.product))}</span></h3>
+  <div class="meta">${esc(tr('reqBy',{w:who(r.requestedBy)}))}${r.createdAt?tr('on')+fmtD(r.createdAt):''}${r.wishDate?' · '+esc(tr('wish',{d:fmtD(r.wishDate)})):''}${r.scheduledAt&&r.status==='approved'?' · <b>'+fmtDT(r.scheduledAt)+'</b>':''}</div>
+  ${r.reason?`<p class="why">${esc(r.reason)}</p>`:''}${r.managerNote?`<p class="why meta">${tr('mgrNote')}${esc(r.managerNote)}</p>`:''}</div>
+  <div class="acts" style="margin:0;justify-content:flex-end"><span class="st ${esc(r.status)}">${esc(tr('s_'+r.status))}</span>${acts}</div></div>`;
+}
+function drawReqs(){
+ const v=$('#v-requests');const rs=scopeReqs();const now=new Date();
+ const pend=rs.filter(r=>r.status==='pending').sort((a,b)=>String(a.createdAt).localeCompare(b.createdAt));
+ const up=rs.filter(r=>r.status==='approved'&&new Date(r.scheduledAt)>=now).sort((a,b)=>a.scheduledAt.localeCompare(b.scheduledAt));
+ const done=rs.filter(r=>r.status==='rejected'||r.status==='cancelled'||(r.status==='approved'&&new Date(r.scheduledAt)<now)).sort((a,b)=>String(b.decidedAt||b.createdAt).localeCompare(a.decidedAt||a.createdAt)).slice(0,12);
+ const sec=(h,l,e)=>`<section><h2>${h}</h2>${l.length?'<div class="rows">'+l.map(reqRow).join('')+'</div>':`<div class="empty"><p>${e}</p></div>`}</section>`;
+ v.innerHTML=sec(isMgr()?tr('secPendMgr'):tr('secPendDev'),pend,isMgr()?tr('emPendMgr'):tr('emPendDev'))+sec(tr('secUp'),up,tr('emUp'))+sec(tr('secHist'),done,tr('emHist'));
+}
+function drawCal(){
+ const v=$('#v-calendar');const m=S.month;const y=m.getFullYear(),mo=m.getMonth();
+ const off=(new Date(y,mo,1).getDay()+6)%7;const g0=new Date(y,mo,1-off);
+ const evs=scopeReqs().filter(r=>r.status==='approved'&&r.scheduledAt).sort((a,b)=>a.scheduledAt.localeCompare(b.scheduledAt));
+ const today=ymd(new Date());let cells=tr('dows').map(d=>`<div class="dow">${d}</div>`).join('');
+ for(let i=0;i<42;i++){const d=new Date(g0.getFullYear(),g0.getMonth(),g0.getDate()+i);const k=ymd(d);
+  const de=evs.filter(r=>r.scheduledAt.slice(0,10)===k);
+  cells+=`<div class="day${d.getMonth()!==mo?' out':''}${k===today?' today':''}"><span class="n">${d.getDate()}</span>${de.map(r=>{const c=cardById(r.cardId);const nm=c?tx(c,'name'):tr('delCard');return `<button class="ev" style="${fc(c&&c.family)}" data-act="ev" data-id="${esc(r.id)}" title="${esc(nm+' · '+scopeName(r.pole,r.product))}"><time>${fmtT(r.scheduledAt)}</time> ${esc(nm)}</button>`}).join('')}</div>`;
+  if(i===34&&new Date(g0.getFullYear(),g0.getMonth(),g0.getDate()+35).getMonth()!==mo)break}
+ const inM=evs.filter(r=>{const d=new Date(r.scheduledAt);return d.getMonth()===mo&&d.getFullYear()===y});
+ v.innerHTML=`<div class="calhead"><button class="btn" data-act="prev" aria-label="${tr('prevM')}">‹</button><h2>${m.toLocaleDateString(loc(),{month:'long',year:'numeric'})}</h2><button class="btn" data-act="today">${tr('today')}</button><button class="btn" data-act="next" aria-label="${tr('nextM')}">›</button></div>
+ <div class="cal">${cells}</div>
+ <div class="legend">${FAMS.map(f=>`<span style="${fc(f.k)}">${ico(f.k)}${esc(f[S.lang])}</span>`).join('')}</div>
+ <section class="agenda"><h2>${tr('month')}</h2>${inM.length?'<div class="rows">'+inM.map(reqRow).join('')+'</div>':`<div class="empty"><p>${tr('emMonth')}</p></div>`}</section>`;
+}
+
+/* ---------- méthodes ---------- */
+// r: rythme, l: niveau, o: optimise, i: principe, f: adaptée quand, w: vigilance
+const MDOC=[
+ {k:'scrum',u:'https://scrumguides.org/scrum-guide.html',
+  en:{r:'Fixed sprints (≤ 1 month)',l:'Team',o:'Predictable, usable increments',i:'Each sprint delivers a usable increment; the product and the way of working are inspected and adapted every sprint.',f:'One product, one team of about ten, uncertain scope.',w:'Without a real sprint goal, the events turn into ceremonies.'},
+  fr:{r:'Sprints fixes (≤ 1 mois)',l:'Équipe',o:'Incréments utilisables et prévisibles',i:'Chaque sprint livre un incrément utilisable ; produit et façon de travailler sont inspectés et adaptés à chaque sprint.',f:"Un produit, une équipe d'une dizaine de personnes, un périmètre incertain.",w:"Sans véritable objectif de sprint, les événements deviennent des cérémonies."}},
+ {k:'kanban',u:'https://kanban.university/kanban-cadences/',
+  en:{r:'Continuous flow + cadences',l:'Service → several services',o:'Flow, lead time',i:'Start from the current process, make work visible, limit work in progress and improve through regular feedback loops (the cadences).',f:'Run, support, continuous demand, services with SLAs.',w:'A board without WIP limits is just a to-do list.'},
+  fr:{r:'Flux continu + cadences',l:'Service → plusieurs services',o:'Flux, délais',i:"Partir du processus existant, rendre le travail visible, limiter le travail en cours et s'améliorer par des boucles de retour régulières (les cadences).",f:'Run, support, demande continue, services avec SLA.',w:"Un board sans limite de WIP n'est qu'une liste de tâches."}},
+ {k:'safe',u:'https://framework.scaledagile.com/',
+  en:{r:'8–12-week Planning Interval',l:'Several teams → portfolio',o:'Alignment, dependencies, budget governance',i:'Synchronise many teams (an Agile Release Train) on a common planning interval, with lean portfolio management above.',f:'Large organisation, strong dependencies, need for a common calendar and budget governance.',w:'Heavy; can recreate waterfall on a fixed calendar. The AI-native variant shortens the loops.'},
+  fr:{r:'Planning Interval de 8 à 12 semaines',l:'Plusieurs équipes → portefeuille',o:'Alignement, dépendances, gouvernance budgétaire',i:"Synchroniser de nombreuses équipes (un Agile Release Train) sur un même intervalle de planification, avec une gestion de portefeuille lean au-dessus.",f:"Grande organisation, fortes dépendances, besoin d'un calendrier commun et d'une gouvernance budgétaire.",w:'Lourd ; peut recréer un cycle en V sur un calendrier fixe. La variante AI-native raccourcit les boucles.'}},
+ {k:'less',u:'https://less.works/',
+  en:{r:'Common sprint',l:'Several teams, one product',o:'Simplicity, whole-product focus',i:'Scrum scaled with as little added structure as possible: one product, one Product Owner, one backlog; fix the system rather than add roles.',f:'One large product and a will to simplify the organisation.',w:'Demands real structural change (feature teams, fewer roles).'},
+  fr:{r:'Sprint commun',l:'Plusieurs équipes, un produit',o:'Simplicité, vision produit globale',i:"Scrum à l'échelle avec le moins de structure ajoutée possible : un produit, un Product Owner, un backlog ; corriger le système plutôt qu'ajouter des rôles.",f:"Un gros produit et la volonté de simplifier l'organisation.",w:'Exige un vrai changement de structure (feature teams, moins de rôles).'}},
+ {k:'sas',u:'https://www.scrumatscale.com/',
+  en:{r:'Sprints, nested',l:'Several teams → executives',o:'Light scaling, executive involvement',i:'Teams of teams (Scrum of Scrums) with a minimal bureaucracy: an Executive MetaScrum for “what”, an Executive Action Team for “how”.',f:'Scrum organisation wanting light scaling with executives in the loop.',w:'Works only if executives actually attend and decide.'},
+  fr:{r:'Sprints, imbriqués',l:'Plusieurs équipes → direction',o:'Passage à l’échelle léger, implication de la direction',i:"Des équipes d'équipes (Scrum of Scrums) avec une bureaucratie minimale : un Executive MetaScrum pour le « quoi », un Executive Action Team pour le « comment ».",f:"Organisation Scrum voulant passer à l'échelle légèrement, avec la direction dans la boucle.",w:'Ne fonctionne que si la direction participe et décide réellement.'}},
+ {k:'fl',u:'https://www.flightlevels.io/',
+  en:{r:'Per level',l:'Team (1), coordination (2), strategy (3)',o:'End-to-end flow',i:'A thinking model, not a method: improve where coordination happens; teams keep their own method.',f:'Mixed-method organisation; finding where flow breaks between teams.',w:'Improving teams alone (level 1) changes little.'},
+  fr:{r:'Par niveau',l:'Équipe (1), coordination (2), stratégie (3)',o:'Flux de bout en bout',i:"Un modèle de réflexion, pas une méthode : améliorer là où se joue la coordination ; chaque équipe garde sa méthode.",f:"Organisation multi-méthodes ; trouver où le flux se casse entre équipes.",w:"Améliorer les équipes seules (niveau 1) change peu de chose."}},
+ {k:'tt',u:'https://teamtopologies.com/key-concepts',
+  en:{r:'Organisation design, not a cadence',l:'Team structure',o:'Fast flow, cognitive load',i:'Four team types (stream-aligned, platform, enabling, complicated subsystem) and three interaction modes, designed deliberately.',f:'Redesigning teams, building a platform, reducing hand-offs.',w:'Says how teams relate, not how they run their sprints.'},
+  fr:{r:"Design d'organisation, pas une cadence",l:"Structure des équipes",o:'Flux rapide, charge cognitive',i:"Quatre types d'équipes (alignée sur un flux, plateforme, facilitatrice, sous-système complexe) et trois modes d'interaction, choisis délibérément.",f:'Réorganiser les équipes, construire une plateforme, réduire les transferts.',w:"Dit comment les équipes interagissent, pas comment elles mènent leurs sprints."}},
+ {k:'shapeup',u:'https://basecamp.com/shapeup',
+  en:{r:'6-week cycles + 2-week cool-down',l:'Product organisation',o:'Fixed time, variable scope',i:'Work is shaped before it is scheduled, then bet on at a betting table; no backlog carried over.',f:'Autonomous, senior product teams.',w:'Less natural with heavy external dependencies or regulatory deadlines.'},
+  fr:{r:'Cycles de 6 semaines + 2 de cool-down',l:'Organisation produit',o:'Temps fixe, périmètre variable',i:"Le travail est cadré (shaping) avant d'être planifié, puis choisi à la betting table ; pas de backlog reporté.",f:'Équipes produit autonomes et expérimentées.',w:'Moins naturel avec de fortes dépendances externes ou des échéances réglementaires.'}},
+ {k:'pom',u:'https://www.svpg.com/',
+  en:{r:'Continuous discovery + delivery',l:'Product team → product leadership',o:'Outcomes, not output',i:'Empowered teams are given problems to solve and objectives, test ideas weekly with users, then deliver.',f:'Products with real users and uncertain value.',w:'Requires leaders to assign problems, not feature roadmaps.'},
+  fr:{r:'Discovery + delivery continues',l:'Équipe produit → direction produit',o:'Résultats, pas volume livré',i:'Des équipes responsabilisées reçoivent des problèmes à résoudre et des objectifs, testent leurs idées chaque semaine avec des utilisateurs, puis livrent.',f:'Produits avec de vrais utilisateurs et une valeur incertaine.',w:'Exige que la direction confie des problèmes, pas des roadmaps de fonctionnalités.'}},
+ {k:'sre',u:'https://sre.google/sre-book/table-of-contents/',
+  en:{r:'SLO windows (e.g. 4 weeks)',l:'Service in production',o:'Reliability vs speed',i:'Reliability is measured by SLOs; the error budget arbitrates between shipping and stabilising; incidents feed blameless learning.',f:'Production services with availability stakes.',w:'SLOs not agreed with the business mean nothing.'},
+  fr:{r:'Fenêtres de SLO (ex. 4 semaines)',l:'Service en production',o:'Fiabilité vs vitesse',i:"La fiabilité se mesure par des SLO ; le budget d'erreur arbitre entre livrer et stabiliser ; les incidents nourrissent un apprentissage sans blâme.",f:'Services en production avec des enjeux de disponibilité.',w:'Des SLO non validés par le métier ne veulent rien dire.'}},
+ {k:'bank',u:'https://eur-lex.europa.eu/eli/reg/2022/2554/oj',
+  en:{r:'Set by control and regulation',l:'Pole / bank',o:'Compliance, risk control',i:'Not a method: change, architecture, security, audit and DORA controls that exist whatever the method.',f:'Always present in the bank; which of them a given team holds itself depends on the size and exposure of the product.',w:'Small products often rely on pole- or bank-level committees rather than their own.'},
+  fr:{r:'Fixé par le contrôle et la réglementation',l:'Pôle / banque',o:'Conformité, maîtrise des risques',i:"Pas une méthode : les contrôles de changement, d'architecture, de sécurité, d'audit et DORA, qui existent quelle que soit la méthode.",f:"Toujours présents dans la banque ; ceux qu'une équipe tient elle-même dépendent de la taille et de l'exposition du produit.",w:"Les petits produits s'appuient souvent sur les comités du pôle ou de la banque plutôt que sur les leurs."}}];
+// Résout une carte de référence (clé tpl) dans le périmètre courant, à partir des cartes réelles
+function resolveTpl(x){
+ const own=S.cards.filter(c=>c.tpl===x.k&&c.pole===S.pole);const here=c=>S.prod?(!c.product||c.product===S.prod):(!c.product&&!isTeam(c));
+ if(!S.prod&&x.l==='product')return {st:'prodOnly'};
+ const ok=own.find(c=>!c.archived&&here(c));if(ok)return {st:'ok',c:ok};
+ const ar=own.find(c=>c.archived&&here(c));if(ar)return {st:'arch',c:ar};
+ return {st:'miss'}}
+function drawMethods(){
+ const v=$('#v-methods');const L=S.lang;
+ v.innerHTML=`<p class="intro">${esc(tr('mIntro'))}</p><p class="legend2">${esc(tr('mLegend'))}</p><div class="mgrid">`+MDOC.map(m=>{const x=m[L];
+  const cards=CAT.filter(c=>c.m.includes(m.k));
+  return `<article class="md"><h3>${esc(methName(m.k))}</h3>
+  <dl class="kv"><dt>${tr('mRhythm')}</dt><dd>${esc(x.r)}</dd><dt>${tr('mLevel')}</dt><dd>${esc(x.l)}</dd><dt>${tr('mOpt')}</dt><dd>${esc(x.o)}</dd></dl>
+  <div><div class="lbl">${tr('mIdea')}</div><p>${esc(x.i)}</p></div>
+  <div><div class="lbl">${tr('mFit')}</div><p>${esc(x.f)}</p></div>
+  <div><div class="lbl">${tr('mWatch')}</div><p>${esc(x.w)}</p></div>
+  <div><div class="lbl">${tr('mMeet')} (${cards.length})</div><div class="mlist">${cards.map(c=>{const r=resolveTpl(c);const nm=r.c?tx(r.c,'name'):c[L][0];
+   const cls={ok:'',arch:'arch',oth:'oth',miss:'miss',prodOnly:'miss'}[r.st];const ttl=r.st==='prodOnly'?tr('teamNeedsProd'):'';
+   return `<button type="button" class="${cls}" data-mchip="${c.k}" title="${esc(ttl)}"${r.st==='prodOnly'||(r.st==='miss'&&!db)?' disabled':''} style="${fc(c.f)};border-left:3px solid var(--fc)">${esc(nm)}${r.st==='oth'?' · '+esc(scopeName(S.pole,r.c.product)):''}</button>`}).join('')}</div></div>
+  <a href="${esc(m.u)}" target="_blank" rel="noopener">${tr('mSrc')} ↗</a></article>`}).join('')+'</div>';
+}
+
+/* ---------- dialogues ---------- */
+const ov=$('#ov'),dlg=$('#dlg');let onSubmit=null;
+// typing=true : création (nom à saisir) → focus sur le premier champ texte, le clavier s'ouvre.
+// Sinon (réglages, édition, planification, détail) → focus sur la boîte elle-même, sans clavier, pour laisser voir le contenu.
+function open(html,sub,typing){dlg.innerHTML=html;onSubmit=sub;ov.hidden=false;dlg.scrollTop=0;
+ const f=typing&&dlg.querySelector('input:not([type=checkbox]):not([type=date]):not([type=time]),textarea');(f||dlg).focus({preventScroll:true})}
+function close(){ov.hidden=true;dlg.innerHTML='';onSubmit=null}
+const val=n=>{const e=dlg.querySelector(`[name="${n}"]`);return e?(e.type==='checkbox'?e.checked:e.value.trim()):''};
+const checked=n=>[...dlg.querySelectorAll(`[name="${n}"]:checked`)].map(e=>e.value);
+const methChecks=(name,sel,extra)=>`<div class="checks">${(extra?['any']:[]).concat(METH.map(m=>m.k)).map(k=>`<label class="chk"><input type="checkbox" name="${name}" value="${k}"${sel.includes(k)?' checked':''}>${esc(methName(k))}</label>`).join('')}</div>`;
+function langFields(c,L,req){const g=f=>esc(c&&c.t&&c.t[L]&&c.t[L][f]||(L==='fr'&&c&&!c.t&&c[f])||'');const r=req?' required':'';
+ return `<div class="f"><label>${tr('name')}<input name="${L}_name"${r} value="${g('name')}"></label>
+  <label>${tr('def')}<textarea name="${L}_definition"${r}>${g('definition')}</textarea></label>
+  <div class="two"><label>${tr('freqRef')}<input name="${L}_frequency" value="${g('frequency')}"></label><label>${tr('dur')}<input name="${L}_duration" value="${g('duration')}"></label></div>
+  <label>${tr('parts')}<input name="${L}_participants" value="${g('participants')}"></label>
+  <label>${tr('trigL')}<textarea name="${L}_triggers">${g('triggers')}</textarea></label></div>`}
+function cardForm(c){
+ const L=S.lang,O=other();c=c||{family:S.fam||FAMS[0].k,pole:S.pole,product:S.prod||null,methods:effMethods().slice(0,1)};
+ const lvl=isTeam(c)?'__team':(c.product||'');const prods=S.products.filter(p=>p.pole===c.pole);
+ open(`<form class="f"><h2>${c.id?tr('cardEdit'):tr('cardNew')}</h2>
+  <p class="hint">${tr('textIn',{l:LN[S.lang][L]})}</p>${langFields(c,L,true)}
+  <details><summary>${tr('otherLang',{l:LN[S.lang][O]})}</summary>${langFields(c,O,false)}</details>
+  <div class="two"><label>${tr('famL')}<select name="family">${FAMS.map(f=>`<option value="${f.k}"${f.k===c.family?' selected':''}>${esc(f[S.lang])}</option>`).join('')}</select></label>
+  <label>${tr('level')}<select name="level"><option value="">${esc(tr('lvlPole',{p:scopeName(c.pole)}))}</option><option value="__team"${lvl==='__team'?' selected':''}>${esc(tr('lvlTeamOpt'))}</option>${prods.map(p=>`<option value="${esc(p.id)}"${p.id===lvl?' selected':''}>${esc(p.name)}</option>`).join('')}</select></label></div>
+  <fieldset><legend>${tr('methods')}</legend>${methChecks('m',c.methods||[],true)}</fieldset>
+  <div class="dacts">${c.id&&isMgr()&&isOwn(c)&&!c.archived?`<button type="button" class="btn ghost left" data-act="archive" data-id="${esc(c.id)}">${tr('archive')}</button>`:''}<button type="button" class="btn" data-act="close">${tr('cancel')}</button><button class="btn pri">${tr('save')}</button></div></form>`,
+ async()=>{const F=['name','definition','frequency','duration','participants','triggers'];const tt={};
+  for(const l of [L,O]){const o={};F.forEach(f=>o[f]=val(l+'_'+f));if(o.name||o.definition)tt[l]=o}
+  if(!tt[L]||!tt[L].name||!tt[L].definition)return toast(tr('eNameDef'));
+  const at=new Date().toISOString();const d={t:tt,family:val('family'),product:(val('level')==='__team'?null:val('level')||null),level:val('level')==='__team'?'team':(val('level')?'product':'pole'),pole:c.pole,methods:checked('m'),updatedBy:uid||null,updatedAt:at};
+  const ok=await w(async()=>{if(c.id)await db.doc('cards/'+c.id).set({...stripOld(c),...d});else{const ref=await db.collection('cards').add({...d,createdAt:at,tpl:null,origin:scopeKey()});await setDeck({id:ref.id},true)}},c.id?tr('tUpdated'):tr('tCreated'));if(ok)close()},!c.id);
+}
+// Retire les anciens champs à plat (version FR seule) lors d'une ré-écriture complète
+const stripOld=c=>{const o={};for(const k in c)if(!['id','name','definition','frequency','duration','participants','triggers','mandatory'].includes(k))o[k]=c[k];return o};
+function askForm(c){
+ open(`<form class="f"><h2>${esc(tr('reqT',{n:tx(c,'name')}))}</h2><p class="sub">${esc(tx(c,'definition'))} ${esc(tr('refFreq',{f:tx(c,'frequency')||'—'}))}</p>
+  <label>${tr('why')}<textarea name="reason" required placeholder="${esc(tr('whyPh'))}"></textarea></label>
+  <label>${tr('wishL')}<input type="date" name="wish" min="${ymd(new Date())}"></label>
+  <div class="dacts"><button type="button" class="btn" data-act="close">${tr('cancel')}</button><button class="btn pri">${tr('send')}</button></div></form>`,
+ async()=>{const reason=val('reason');if(!reason)return toast(tr('eReason'));
+  const ok=await w(()=>db.collection('requests').add({pole:c.pole,product:reqProd(c),cardId:c.id,reason,wishDate:val('wish')||null,requestedBy:uid||null,status:'pending',createdAt:new Date().toISOString()}),tr('tSent'));if(ok)close()},true);
+}
+function planForm(r,c){
+ const base=r&&r.scheduledAt?r.scheduledAt:((r&&r.wishDate)||ymd(new Date(Date.now()+864e5)))+'T10:00';const nm=c?tx(c,'name'):'';
+ open(`<form class="f"><h2>${esc(r?(r.status==='approved'?tr('replanT',{n:nm}):tr('approveT',{n:nm})):tr('planT',{n:nm}))}</h2>
+  <p class="sub">${r&&r.reason?esc(tr('reasonBy',{r:r.reason,w:who(r.requestedBy)}))+(r.wishDate?' · '+esc(tr('wish',{d:fmtD(r.wishDate)})):''):tr('direct')}</p>
+  <div class="two"><label>${tr('date')}<input type="date" name="d" required value="${base.slice(0,10)}"></label><label>${tr('time')}<input type="time" name="h" required value="${base.slice(11,16)}"></label></div>
+  <label>${tr('durMin')}<input type="number" name="dur" min="5" step="5" required value="${(r&&r.durationMin)||parseDur(tx(c,'duration'))}"></label>
+  <label>${tr('att')}<input name="att" type="text" inputmode="email" placeholder="first.last@bank.com, …" value="${esc(r&&r.attendees)}"></label>
+  <label>${tr('noteL')}<textarea name="note" placeholder="${esc(tr('notePh'))}">${esc(r&&r.managerNote)}</textarea></label>
+  <div class="dacts"><button type="button" class="btn" data-act="close">${tr('cancel')}</button><button class="btn pri">${tr('place')}</button></div></form>`,
+ async()=>{const d=val('d'),h=val('h');if(!d||!h)return toast(tr('eDT'));
+  const at=new Date().toISOString();const upd={status:'approved',scheduledAt:d+'T'+h,durationMin:Math.max(5,parseInt(val('dur'),10)||60),attendees:val('att'),managerNote:val('note'),decidedBy:uid||null,decidedAt:at};
+  let ref=null;const ok=await w(async()=>{if(r)await db.doc('requests/'+r.id).update(upd);else ref=await db.collection('requests').add({...upd,pole:c.pole,product:reqProd(c),cardId:c.id,reason:'',requestedBy:uid||null,createdAt:at})});
+  if(ok){S.month=new Date(+d.slice(0,4),+d.slice(5,7)-1,1);render();
+   const nr={...(r||{}),...upd,id:r?r.id:ref&&ref.id,pole:c.pole,product:r?r.product:reqProd(c),cardId:c.id};
+   open(`<div><h2>${tr('placed')}</h2><p class="sub">${esc(nm)} — ${fmtDT(nr.scheduledAt)}, ${nr.durationMin} min.</p>
+    <p>${tr('teamsNow',{a:nr.attendees?tr('invAnd'):''})}</p>
+    <div class="dacts"><button class="btn" data-act="close">${tr('later')}</button>${teamsBtn(nr,'pri')}</div></div>`,null)}});
+}
+function noteForm(r,status,title,btn){
+ open(`<form class="f"><h2>${title}</h2><label>${tr('msgTeam')}<textarea name="note"></textarea></label>
+  <div class="dacts"><button type="button" class="btn" data-act="close">${tr('back')}</button><button class="btn pri">${btn}</button></div></form>`,
+ async()=>{const ok=await w(()=>db.doc('requests/'+r.id).update({status,managerNote:val('note'),decidedBy:uid||null,decidedAt:new Date().toISOString()}),tr('tSaved'));if(ok)close()});
+}
+function evDetail(r){
+ const c=cardById(r.cardId);
+ open(`<div><h2>${esc(c?tx(c,'name'):tr('delCard'))}</h2><p class="sub">${esc(scopeName(r.pole,r.product))} · ${fmtDT(r.scheduledAt)}${r.durationMin?' · '+r.durationMin+' min':''}</p>
+  ${c?`<p>${esc(tx(c,'definition'))}</p><dl class="kv"><dt>${tr('who')}</dt><dd>${esc(tx(c,'participants'))||'—'}</dd></dl>`:''}
+  ${r.reason?`<p><b>${tr('reasonL')}</b> ${esc(r.reason)} (${esc(who(r.requestedBy))})</p>`:''}${r.managerNote?`<p><b>${tr('noteB')}</b> ${esc(r.managerNote)}</p>`:''}
+  <div class="dacts">${isMgr()?`<button class="btn ghost left" data-act="cancel" data-id="${esc(r.id)}">${tr('cancelM')}</button><button class="btn" data-act="approve" data-id="${esc(r.id)}">${tr('replan')}</button>`:''}${teamsBtn(r)}<button class="btn pri" data-act="close">${tr('close')}</button></div></div>`,null);
+}
+function poleForm(){
+ open(`<form class="f"><h2>${tr('newPole')}</h2><label>${tr('name')}<input name="name" required placeholder="Data"></label>
+  <fieldset><legend>${tr('methods')}</legend><p class="hint">${tr('methHintPole')}</p>${methChecks('m',[],false)}</fieldset>
+  <div class="dacts"><button type="button" class="btn" data-act="close">${tr('cancel')}</button><button class="btn pri">${tr('create')}</button></div></form>`,
+ async()=>{const name=val('name');if(!name)return;let ref;const ok=await w(async()=>{const at=new Date().toISOString();ref=await db.collection('poles').add({name,methods:checked('m'),createdAt:at,deckInit:at})},tr('tPole'));
+  if(ok){S.pole=ref.id;S.prod='';store('pole',S.pole);store('prod','');close();render()}},true);
+}
+function prodForm(){
+ open(`<form class="f"><h2>${tr('newProd')}</h2><label>${tr('name')}<input name="name" required placeholder="EDMS"></label>
+  <label>${tr('inPole')}<select name="pole">${S.poles.map(p=>`<option value="${esc(p.id)}"${p.id===S.pole?' selected':''}>${esc(p.name)}</option>`).join('')}</select></label>
+  <fieldset><legend>${tr('methods')}</legend><p class="hint">${esc(tr('methHintProd',{m:((poleOf(S.pole)||{}).methods||[]).map(methName).join(', ')||tr('none')}))}</p>${methChecks('m',[],false)}</fieldset>
+  <div class="dacts"><button type="button" class="btn" data-act="close">${tr('cancel')}</button><button class="btn pri">${tr('create')}</button></div></form>`,
+ async()=>{const name=val('name'),pole=val('pole');if(!name||!pole)return;let ref;const ok=await w(async()=>{const at=new Date().toISOString();ref=await db.collection('products').add({name,pole,methods:checked('m'),createdAt:at,deckInit:at})},tr('tProd'));
+  if(ok){S.pole=pole;S.prod=ref.id;store('pole',pole);store('prod',ref.id);close();render()}},true);
+}
+function settingsForm(){
+ const isP=!!S.prod;const o=isP?prodOf(S.prod):poleOf(S.pole);if(!o)return;
+ open(`<form class="f"><h2>${esc(tr('setT',{n:o.name}))}</h2><label>${tr('name')}<input name="name" required value="${esc(o.name)}"></label>
+  <fieldset><legend>${tr('methods')}</legend><p class="hint">${esc(isP?tr('methHintProd',{m:((poleOf(S.pole)||{}).methods||[]).map(methName).join(', ')||tr('none')}):tr('methHintPole'))}</p>${methChecks('m',o.methods||[],false)}</fieldset>
+  <fieldset><legend>${tr('dormSet')}</legend><div class="two"><label>${tr('dormFactor')}<input type="number" name="df" min="1" max="12" step="1" value="${+o.dormantFactor||3}"></label><label>${tr('dormDays')}<input type="number" name="dd" min="7" max="730" step="1" value="${+o.dormantDays||90}"></label></div></fieldset>
+  <div class="dacts">${isMgr()?(isP?`<button type="button" class="btn ghost left" data-act="delprod" data-id="${esc(o.id)}">${tr('delProd')}</button>`:`<button type="button" class="btn ghost left" data-act="delpole" data-id="${esc(o.id)}">${tr('delPole')}</button>`):''}<button type="button" class="btn" data-act="close">${tr('cancel')}</button><button class="btn pri">${tr('save')}</button></div></form>`,
+ async()=>{const name=val('name');if(!name)return;const ok=await w(()=>db.doc((isP?'products/':'poles/')+o.id).update({name,methods:checked('m'),dormantFactor:Math.max(1,parseInt(val('df'),10)||3),dormantDays:Math.max(7,parseInt(val('dd'),10)||90)}),tr('tSaved'));if(ok)close()});
+}
+const tplFor=(lvl,M)=>CAT.filter(x=>x.l===lvl&&(x.m.includes('any')||!M.length||x.m.some(m=>M.includes(m))));
+function importForm(){
+ const lvl=S.prod?'product':'pole';const have=new Set(S.cards.filter(c=>c.pole===S.pole&&!c.product).map(c=>c.tpl).filter(Boolean));
+ const count=M=>tplFor(lvl,M).filter(x=>!have.has(x.k)).length;
+ open(`<form class="f"><h2>${tr('impT')}</h2><p class="sub">${esc(tr('impHint',{lvl:lvl==='pole'?tr('lvlP'):tr('lvlPr')}))}</p>
+  <fieldset><legend>${tr('methods')}</legend>${methChecks('m',effMethods(),false)}</fieldset>
+  <div class="dacts"><button type="button" class="btn" data-act="close">${tr('cancel')}</button><button class="btn pri" id="impGo">${tr('impGo',{n:count(effMethods())})}</button></div></form>`,
+ async()=>{const M=checked('m');const list=tplFor(lvl,M).filter(x=>!have.has(x.k));const at=new Date().toISOString();let n=0;
+  close();for(const x of list){const ok=await w(()=>db.collection('cards').add(tplDoc(x,S.pole,null,at)));if(!ok)break;n++}
+  S.view='catalog';render();toast(tr('tImported',{n}))});
+ dlg.addEventListener('change',()=>{const b=dlg.querySelector('#impGo');if(b)b.textContent=tr('impGo',{n:count(checked('m'))})});
+}
+const tplDoc=(x,pole,product,at)=>{const F=['name','definition','frequency','duration','participants','triggers'];const mk=a=>Object.fromEntries(F.map((f,i)=>[f,a[i]]));
+ return {pole,product,level:x.l==='product'?'team':'pole',origin:scopeKey(),family:x.f,methods:x.m,tpl:x.k,t:{en:mk(x.en),fr:mk(x.fr)},createdAt:at,updatedAt:at,updatedBy:uid||null}};
+
+function addTplForm(x){
+ const sn=scopeName(S.pole);
+ open(`<form class="f"><h2>${esc(tr('mAddT',{n:x[S.lang][0],s:sn}))}</h2><p class="sub">${esc(tr('mAddTxt',{s:sn}))}</p><p>${esc(x[S.lang][1])}</p>
+  <div class="dacts"><button type="button" class="btn" data-act="close">${tr('cancel')}</button><button class="btn pri">${tr('mAddGo')}</button></div></form>`,
+ async()=>{let ref;const ok=await w(async()=>{ref=await db.collection('cards').add(tplDoc(x,S.pole,null,new Date().toISOString()))},tr('tAddedCat'));
+  if(ok){close();S.only=ref.id;S.view='catalog';location.hash='cards';render()}});
+}
+// Option B : supprime le produit, ses cartes propres, ses demandes et son jeu, sans retour
+async function deleteProduct(id){
+ const cs=S.cards.filter(c=>c.product===id),rs=S.reqs.filter(r=>r.product===id),ds=S.deck.filter(d=>d.scope==='p-'+id);
+ const ok=await w(async()=>{for(const r of rs)await db.doc('requests/'+r.id).delete();for(const d of ds)await db.doc('deck/'+d.id).delete();for(const c of cs)await db.doc('cards/'+c.id).delete();await db.doc('products/'+id).delete()},tr('tProdDel'));
+ if(ok){close();S.prod='';store('prod','');render()}}
+// Option A : supprime le pôle et tout ce qu'il contient (produits, cartes, demandes, jeux), sans retour
+const poleContent=id=>{const ps=S.products.filter(x=>x.pole===id);const keys=new Set(['P-'+id,...ps.map(x=>'p-'+x.id)]);
+ return {ps,cs:S.cards.filter(c=>c.pole===id),rs:S.reqs.filter(r=>r.pole===id),ds:S.deck.filter(d=>keys.has(d.scope))}};
+async function deletePole(id){const {ps,cs,rs,ds}=poleContent(id);
+ const ok=await w(async()=>{for(const r of rs)await db.doc('requests/'+r.id).delete();for(const d of ds)await db.doc('deck/'+d.id).delete();for(const c of cs)await db.doc('cards/'+c.id).delete();for(const x of ps)await db.doc('products/'+x.id).delete();await db.doc('poles/'+id).delete()},tr('tPoleDel'));
+ if(ok){close();S.pole=null;S.prod='';store('pole','');store('prod','');render()}}
+/* ---------- événements ---------- */
+document.addEventListener('click',e=>{
+ const b=e.target.closest('[data-act],[data-role],[data-tab],[data-fam],[data-meth],[data-lang],[data-view],[data-mchip],[data-showall]');if(!b)return;
+ if(b.dataset.showall!==undefined){S.only=null;drawGrid();return}
+ if(b.dataset.mchip){const x=CAT.find(t=>t.k===b.dataset.mchip);if(!x)return;const r=resolveTpl(x);
+  const show=(c,view)=>{S.only=c.id;S.view=view;S.q='';$('#q').value='';location.hash='cards';render();window.scrollTo(0,0)};
+  if(r.st==='ok')show(r.c,inDeck(r.c)?'deck':'catalog');
+  else if(r.st==='arch')show(r.c,'archive');
+  else if(r.st==='oth'){S.prod=r.c.product;store('prod',S.prod);show(r.c,inDeck(r.c)?'deck':'catalog');toast(tr('tSwitched',{p:scopeName(S.pole,S.prod)}))}
+  else if(r.st==='miss')addTplForm(x);
+  return}
+ if(b.dataset.view){S.only=null;S.view=b.dataset.view;if(S.view==='catalog')S.meth='rec';drawFilters();drawGrid();return}
+ if(b.dataset.lang){S.lang=b.dataset.lang;store('lang',S.lang);render();return}
+ if(b.dataset.role){S.role=b.dataset.role;store('role',S.role);render();return}
+ if(b.dataset.tab){location.hash=b.dataset.tab;return}
+ if(b.dataset.fam!==undefined&&!b.dataset.act){S.only=null;S.fam=b.dataset.fam;drawFilters();drawGrid();return}
+ if(b.dataset.meth!==undefined&&!b.dataset.act){S.only=null;S.meth=b.dataset.meth;drawFilters();drawGrid();return}
+ const id=b.dataset.id,a=b.dataset.act,r=S.reqs.find(x=>x.id===id),c=cardById(id);
+ if(a==='close')close();
+ else if(a==='new')cardForm();
+ else if(a==='edit'&&c)cardForm(c);
+ else if(a==='ask'&&c)askForm(c);
+ else if(a==='plan'&&c)planForm(null,c);
+ else if(a==='approve'&&r)planForm(r,cardById(r.cardId));
+ else if(a==='reject'&&r)noteForm(r,'rejected',tr('reject'),tr('reject'));
+ else if(a==='cancel'&&r)noteForm(r,'cancelled',tr('cancelM'),tr('cancelM'));
+ else if(a==='withdraw'&&r)w(()=>db.doc('requests/'+r.id).delete(),tr('tWithdrawn'));
+ else if(a==='ev'&&r)evDetail(r);
+ else if(a==='import')importForm();
+ else if(a==='delprod'&&isMgr()){const pr=prodOf(id);if(!pr)return;if(b.dataset.confirm)deleteProduct(id);else{b.dataset.confirm='1';b.textContent=tr('delProdConf',{n:pr.name,c:S.cards.filter(x=>x.product===id).length,r:S.reqs.filter(x=>x.product===id).length})}}
+ else if(a==='delpole'&&isMgr()){const po=poleOf(id);if(!po)return;if(b.dataset.confirm)deletePole(id);else{const k=poleContent(id);b.dataset.confirm='1';b.textContent=tr('delPoleConf',{n:po.name,p:k.ps.length,c:k.cs.length,r:k.rs.length})}}
+ else if(a==='adddeck'&&c)w(()=>setDeck(c,true),tr('tAdded'));
+ else if(a==='aside'&&c)w(()=>setDeck(c,false,{aside:true}),tr('tAside'));
+ else if(a==='rmdeck'&&c&&isMgr())w(()=>setDeck(c,false),tr('tRemoved'));
+ else if(a==='keep'&&c){const d=deckDoc(c)||{};w(()=>setDeck(c,true,{at:d.at||new Date().toISOString(),by:d.by||uid||null,keptAt:new Date().toISOString(),keptBy:uid||null}),tr('tKept'))}
+ else if(a==='archive'&&c&&isMgr())w(()=>db.doc('cards/'+c.id).update({archived:true,archivedBy:uid||null,archivedAt:new Date().toISOString()}),tr('tArchived')).then(ok=>ok&&close());
+ else if(a==='restore'&&c&&isMgr())w(()=>db.doc('cards/'+c.id).update({archived:false}),tr('tRestored'));
+ else if(a==='purge'&&c&&isMgr()){if(b.dataset.confirm){w(()=>db.doc('cards/'+c.id).delete(),tr('tDeleted'))}else{b.dataset.confirm='1';b.textContent=tr('confDelPerm')}}
+ else if(a==='prev'||a==='next'){S.month=new Date(S.month.getFullYear(),S.month.getMonth()+(a==='next'?1:-1),1);drawCal()}
+ else if(a==='today'){const n=new Date();S.month=new Date(n.getFullYear(),n.getMonth(),1);drawCal()}
+});
+$('#newCard').addEventListener('click',()=>cardForm());
+$('#addPole').addEventListener('click',poleForm);
+$('#addProd').addEventListener('click',prodForm);
+$('#settings').addEventListener('click',settingsForm);
+$('#coBtn').addEventListener('click',()=>window.MTG&&MTG.switchCompany());
+$('#pole').addEventListener('change',e=>{S.only=null;S.pole=e.target.value;S.prod='';store('pole',S.pole);store('prod','');render()});
+$('#prod').addEventListener('change',e=>{S.only=null;S.prod=e.target.value;store('prod',S.prod);render()});
+$('#q').addEventListener('input',e=>{S.only=null;S.q=e.target.value;drawGrid()});
+dlg.addEventListener('submit',e=>{e.preventDefault();if(onSubmit)onSubmit()});
+ov.addEventListener('click',e=>{if(e.target===ov)close()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!ov.hidden)close()});
+const ALIAS={cartes:'cards',demandes:'requests',calendrier:'calendar',methodes:'methods'};
+function route(){const h=location.hash.slice(1);const k=ALIAS[h]||h;S.tab=['cards','requests','calendar','methods'].includes(k)?k:'cards';render()}
+window.addEventListener('hashchange',route);
+
+/* ---------- données ---------- */
+async function names(){
+ if(!user)return;const ids=[...new Set(S.reqs.flatMap(r=>[r.requestedBy,r.decidedBy]).concat(S.deck.flatMap(d=>[d.by,d.keptBy]),S.cards.map(c=>c.archivedBy)).filter(x=>x&&x!==uid&&!(x in S.names)))];
+ if(!ids.length)return;try{const ps=await user.profiles(ids);ids.forEach(i=>S.names[i]=(ps&&ps[i]&&ps[i].name)||tr('member'));render()}catch(e){}
+}
+(async()=>{
+ route();
+ [db,user]=await Promise.all([window.claude?claude.use('db'):null,window.claude?claude.use('user'):null]);
+ S.got.ready=true;
+ if(user){try{uid=await user.id()}catch(e){}try{const cw=await user.can('data.write');if(cw===false)canWrite=false}catch(e){}}
+ if(!db){render();return}
+ const timer=setTimeout(()=>{if(!S.got.cards){S.err=tr('wSlow');render()}},10000);
+ const sub=(col,key)=>db.collection(col).onSnapshot(s=>{S[key]=s.docs.map(d=>({id:d.id,...d.data()}));if(!s.metadata.fromCache){S.got[key]=true;if(key==='cards'){S.err='';clearTimeout(timer)}}render();if(key!=='poles'&&key!=='products')names()},e=>{clearTimeout(timer);S.err=tr('wRead',{c:e.code});render()});
+ sub('poles','poles');sub('products','products');sub('cards','cards');sub('requests','reqs');sub('deck','deck');
+ render();
+})();
+}
+</script>
+</body>
+</html>
