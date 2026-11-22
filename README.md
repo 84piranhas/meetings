@@ -32,3 +32,9 @@ Une ouverture de page lit l'ensemble des documents de l'espace (environ 60 à 10
 En-tête › bouton « Espace » › rôle Manager. Tout est copié sous le nouveau nom ; l'ancien nom redirige vers le nouveau,
 sauf si « Couper l'ancien nom » est coché (l'ancien nom affiche alors « espace fermé »).
 Nécessite la collection `meta` dans les règles Firestore (voir `firestore.rules`).
+
+## Sauvegarde, restauration, suppression
+Bouton « Espace » :
+- **Exporter** (tout le monde) : télécharge un fichier JSON avec tout l'espace. La base gratuite ne fait aucune sauvegarde.
+- **Importer** (Manager) : remplace tout le contenu de l'espace courant par celui du fichier, après confirmation.
+- **Supprimer cet espace** (Manager) : il faut retaper le nom ; un fichier de sauvegarde est téléchargé avant ; le nom redevient libre.
