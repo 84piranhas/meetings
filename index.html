@@ -148,7 +148,7 @@ textarea{min-height:76px;resize:vertical}
 .note{font-size:13px;color:var(--mut);margin-top:28px}
 .warn{background:var(--soft);border-radius:12px;padding:10px 14px;font-size:14px;margin-bottom:16px}
 @media(max-width:600px){
- .ctl .grp{width:100%}.ctl select{flex:1;max-width:none}
+ .ctl .grp{width:100%}.ctl select{flex:1;max-width:none}.ctl .grp label{flex:0 0 4.6em}.ctl>.btn{flex:1 1 100%;justify-content:center}.ctl #coBtn{max-width:none}.ctl>.sp{display:none}.ctl>#roles{display:flex;width:100%}.ctl>#roles button{flex:1}.flt>b{min-width:5.4em}[data-skin] .tabs button{flex:1 1 auto;padding:10px 4px;font-size:14px}[data-skin] .views{display:flex;flex-wrap:nowrap;overflow-x:auto;width:100%}[data-skin] .views button{flex:1 1 auto;padding:8px 6px;white-space:nowrap}
  .cal .day{min-height:58px;padding:4px}
  .cal .dow{padding:4px;font-size:12px;text-align:center}
  .ev{font-size:0;padding:0;height:8px;border-left-width:0;background:var(--fc,var(--band))}
@@ -218,7 +218,6 @@ textarea{min-height:76px;resize:vertical}
    <div class="grp"><label for="prod" id="lProd"></label><select id="prod"></select><button class="btn plus" id="addProd" type="button">+</button></div>
    <button class="btn" id="settings" type="button"></button>
    <button class="btn" id="coBtn" type="button"></button>
-   <button class="btn" id="linkBtn" type="button"></button>
    <span class="sp"></span>
    <div class="seg" role="group" id="roles"><button type="button" data-role="dev"></button><button type="button" data-role="mgr"></button></div>
   </div>
@@ -488,7 +487,7 @@ function render(){
  if(window.MTG&&MTG.syncUrl)MTG.syncUrl();
  $('#sub').textContent=tr('sub');$('header h1').textContent=tr('appTitle');document.title=tr('appTitle');$('#lPole').textContent=tr('pole');$('#lProd').textContent=tr('prod');
  for(const[k,v]of[['#addPole','addPoleL'],['#addProd','addProdL']]){$(k).title=tr(v);$(k).setAttribute('aria-label',tr(v))}$('#settings').textContent=tr('settings');
- $('#q').placeholder=tr('search');$('#q').setAttribute('aria-label',tr('search'));$('#newCard').textContent=tr('newCard');$('#foot').textContent=tr('foot');if(window.MTG&&MTG.company){$('#linkBtn').textContent=tr('copyLink');$('#coBtn').textContent=MTG.company+(MTG.demo?' (demo)':'')+' · '+tr('coSwitch');}
+ $('#q').placeholder=tr('search');$('#q').setAttribute('aria-label',tr('search'));$('#newCard').textContent=tr('newCard');$('#foot').textContent=tr('foot');if(window.MTG&&MTG.company){$('#coBtn').textContent=MTG.company+(MTG.demo?' (demo)':'')+' · '+tr('coSwitch');}
  $('[data-role=dev]').textContent=tr('dev');$('[data-role=mgr]').textContent=tr('mgr');
  $('#pole').innerHTML=poles.length?poles.map(p=>`<option value="${esc(p.id)}"${p.id===S.pole?' selected':''}>${esc(p.name)}</option>`).join(''):`<option>${tr('noPole')}</option>`;
  $('#prod').innerHTML=`<option value="">${tr('wholePole')}</option>`+prods.map(p=>`<option value="${esc(p.id)}"${p.id===S.prod?' selected':''}>${esc(p.name)}</option>`).join('');
@@ -834,7 +833,6 @@ $('#settings').addEventListener('click',settingsForm);
 $('#coBtn').addEventListener('click',()=>window.MTG&&MTG.switchCompany());
 MTG.linkUrl=()=>{const q=new URLSearchParams();q.set('company',MTG.company);const po=poleOf(S.pole),pr=S.prod&&prodOf(S.prod);if(po)q.set('pole',po.name);if(pr)q.set('product',pr.name);return location.pathname+'?'+q.toString()};
 MTG.syncUrl=()=>{try{if(!MTG.company||!S.got.poles||!S.got.products||(MTG.want&&(MTG.want.pole||MTG.want.prod)))return;const u=MTG.linkUrl();if(u!==location.pathname+location.search)history.replaceState(null,'',u)}catch(e){}};
-$('#linkBtn').addEventListener('click',async()=>{const u=location.origin+MTG.linkUrl();try{await navigator.clipboard.writeText(u);toast(tr('tCopied'))}catch(e){open(`<div><h2>${tr('copyLink')}</h2><p class="sub" style="user-select:all;overflow-wrap:anywhere">${esc(u)}</p><div class="dacts"><button class="btn pri" data-act="close">${tr('close')}</button></div></div>`,null)}});
 $('#pole').addEventListener('change',e=>{S.only=null;S.pole=e.target.value;S.prod='';store('pole',S.pole);store('prod','');render()});
 $('#prod').addEventListener('change',e=>{S.only=null;S.prod=e.target.value;store('prod',S.prod);render()});
 $('#q').addEventListener('input',e=>{S.only=null;S.q=e.target.value;drawGrid()});
