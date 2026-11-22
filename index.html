@@ -246,7 +246,7 @@ textarea{min-height:76px;resize:vertical}
 <div class="ov login" id="login" hidden><form class="dlg f" id="loginForm" autocomplete="on">
  <div class="lgl"><h2 id="lgTitle">Meetings à la carte</h2><div class="seg" role="group"><button type="button" data-lglang="en">EN</button><button type="button" data-lglang="fr">FR</button></div></div>
  <p class="sub" id="lgSub"></p>
- <label><span id="lgCo"></span><input id="lgCompany" name="organization" autocomplete="organization" required></label>
+ <label><span id="lgCo"></span><input id="lgCompany" name="space" autocomplete="off" required></label>
  <label><span id="lgNm"></span><input id="lgNameIn" name="name" autocomplete="name"></label>
  <p class="err" id="lgErr"></p>
  <p class="hint" id="lgWarn"></p>
@@ -272,7 +272,7 @@ const FIREBASE_SDK = "10.12.2";
  window.claude={use:n=>READY.then(()=>n==='db'?DB:n==='user'?USER:null)};
  const demo=!FIREBASE_CONFIG.projectId;
  const Q=new URLSearchParams(location.search);
- window.MTG={uid,slug,LS,demo,company:null,want:{company:(Q.get('company')||'').trim(),pole:(Q.get('pole')||'').trim()||null,prod:(Q.get('product')||'').trim()||null}};
+ window.MTG={uid,slug,LS,demo,company:null,want:{space:(Q.get('space')||'').trim(),pole:(Q.get('pole')||'').trim()||null,prod:(Q.get('product')||'').trim()||null}};
 
  // ---------- Mode démo : stockage local, même API ----------
  function demoDB(t){
@@ -295,12 +295,60 @@ const FIREBASE_SDK = "10.12.2";
   };
  }
 
+ let FB=null;
+ async function fb(){if(!FB){const base='https://www.gstatic.com/firebasejs/'+FIREBASE_SDK+'/';
+  const A=await import(base+'firebase-app.js');const F=await import(base+'firebase-firestore.js');
+  const app=A.initializeApp(FIREBASE_CONFIG);FB=[F,F.initializeFirestore(app,{ignoreUndefinedProperties:true})]}return FB}
+
+ // ---------- Opérations sur un espace entier (renommage, redirection) ----------
+ const COLLS=['poles','products','cards','requests','deck','members'];
+ const demoLoad=t=>{try{return JSON.parse(localStorage.getItem('mtg.demo.'+t))||{}}catch(e){return {}}};
+ const demoSave=(t,D)=>{try{localStorage.setItem('mtg.demo.'+t,JSON.stringify(D))}catch(e){}};
+ async function metaGet(t){
+  if(demo){const D=demoLoad(t);return (D.meta&&D.meta.info)||null}
+  try{const [F,fs]=await fb();const d=await F.getDoc(F.doc(fs,'tenants/'+t+'/meta/info'));return d.exists()?d.data():null}catch(e){return null}
+ }
+ async function metaSet(t,m){
+  if(demo){const D=demoLoad(t);D.meta={info:m};demoSave(t,D);return}
+  const [F,fs]=await fb();await F.setDoc(F.doc(fs,'tenants/'+t+'/meta/info'),m);
+ }
+ async function dump(t){
+  if(demo){const D=demoLoad(t),o={};COLLS.forEach(c=>o[c]=D[c]||{});return o}
+  const [F,fs]=await fb(),o={};
+  for(const c of COLLS){const q=await F.getDocs(F.collection(fs,'tenants/'+t+'/'+c));o[c]={};q.docs.forEach(d=>o[c][d.id]=d.data())}
+  return o;
+ }
+ const count=o=>COLLS.reduce((n,c)=>n+Object.keys(o[c]||{}).length,0);
+ async function batchAll(ops){ // ops : [['set'|'del', chemin, données]]
+  const [F,fs]=await fb();
+  for(let i=0;i<ops.length;i+=400){const b=F.writeBatch(fs);
+   ops.slice(i,i+400).forEach(([k,p,d])=>k==='set'?b.set(F.doc(fs,p),d):b.delete(F.doc(fs,p)));await b.commit()}
+ }
+ // Renomme l'espace courant. cut=true : l'ancien nom ne mène plus nulle part (changement d'accès).
+ async function renameSpace(newName,cut){
+  const from=slug(window.MTG.company),to=slug(newName),at=new Date().toISOString();
+  if(!to)throw {code:'empty'};
+  if(to===from){await metaSet(from,{name:newName,at});return 'label'}
+  const target=await dump(to);if(count(target))throw {code:'exists'};
+  const data=await dump(from);
+  const oldMeta=cut?{closed:true,at}:{movedTo:to,name:newName,at};
+  if(demo){const N={};COLLS.forEach(c=>N[c]=data[c]);N.meta={info:{name:newName,at}};demoSave(to,N);demoSave(from,{meta:{info:oldMeta}});return 'moved'}
+  await metaSet(to,{name:newName,at});                   // 0. vérifie au passage que les règles autorisent le renommage
+  const ops=[];COLLS.forEach(c=>Object.entries(data[c]).forEach(([id,d])=>ops.push(['set','tenants/'+to+'/'+c+'/'+id,d])));
+  await batchAll(ops);                                   // 1. copie complète sous le nouveau nom
+  await metaSet(from,oldMeta);                           // 2. marque l'ancien espace : les sessions ouvertes basculent
+  const del=[];COLLS.forEach(c=>Object.keys(data[c]).forEach(id=>del.push(['del','tenants/'+from+'/'+c+'/'+id])));
+  await batchAll(del);                                   // 3. vide l'ancien espace
+  return 'moved';
+ }
+ window.MTG.renameSpace=renameSpace;
+ const goSpace=name=>{const q=new URLSearchParams(location.search);q.set('space',name);location.replace(location.pathname+'?'+q.toString())};
+ window.MTG.goSpace=goSpace;
+ window.MTG.takeNotice=()=>{const n=LS.get('mtg.notice');LS.del('mtg.notice');try{return n?JSON.parse(n):null}catch(e){return null}};
+
  // ---------- Firebase Firestore : tenants/<entreprise>/<collection>/<document> ----------
  async function fireDB(t){
-  const base='https://www.gstatic.com/firebasejs/'+FIREBASE_SDK+'/';
-  const A=await import(base+'firebase-app.js');const F=await import(base+'firebase-firestore.js');
-  const app=A.initializeApp(FIREBASE_CONFIG);
-  const fs=F.initializeFirestore(app,{ignoreUndefinedProperties:true});
+  const [F,fs]=await fb();
   const root='tenants/'+t+'/';
   const err=e=>({code:e&&e.code==='permission-denied'?'invalid_argument':((e&&e.code)||'unavailable'),message:(e&&e.message)||''});
   const wrap=s=>({docs:s.docs.map(d=>({id:d.id,exists:true,data:()=>d.data()})),metadata:{fromCache:s.metadata.fromCache,hasPendingWrites:s.metadata.hasPendingWrites}});
@@ -313,27 +361,37 @@ const FIREBASE_SDK = "10.12.2";
   };
  }
 
- async function start(company,name){
-  const t=slug(company);if(!t)return false;
-  LS.set('mtg.company',company);if(name)LS.set('mtg.name',name);
+ async function start(space,name){
+  let t=slug(space);if(!t)return false;
+  // Suit les redirections laissées par un renommage ; refuse un espace fermé
+  for(let i=0;i<5;i++){const m=await metaGet(t);
+   if(m&&m.movedTo){LS.set('mtg.notice',JSON.stringify({from:space,to:m.name}));space=m.name;t=m.movedTo;continue}
+   if(m&&m.closed){LS.del('mtg.space');if(window.MTG.onClosed)window.MTG.onClosed(space);return 'closed'}
+   if(m&&m.name)space=m.name;break}
+  LS.set('mtg.space',space);if(name)LS.set('mtg.name',name);
   try{DB=demo?demoDB(t):await fireDB(t)}catch(e){console.error(e);DB=null}
   if(DB){
    DB.collection('members').onSnapshot(s=>{members={};s.docs.forEach(d=>members[d.id]=d.data());resolveMembers()},()=>resolveMembers());
    const nm=LS.get('mtg.name');if(nm)DB.doc('members/'+uid).set({name:nm,at:new Date().toISOString()}).catch(()=>{});
+   // Renommage fait par quelqu'un d'autre pendant la session
+   DB.collection('meta').onSnapshot(s=>{const d=s.docs.find(x=>x.id==='info'),m=d&&d.data();if(!m)return;
+    if(m.movedTo&&m.movedTo!==t){LS.set('mtg.space',m.name);LS.set('mtg.notice',JSON.stringify({from:window.MTG.company,to:m.name}));goSpace(m.name)}
+    else if(m.closed){LS.del('mtg.space');LS.set('mtg.closedMsg',window.MTG.company);location.replace(location.pathname)}
+    else if(m.name&&m.name!==window.MTG.company){window.MTG.company=m.name;LS.set('mtg.space',m.name);if(window.MTG.onName)window.MTG.onName()}},()=>{});
   }else resolveMembers();
-  window.MTG.company=company;
+  window.MTG.company=space;
   const lg=document.getElementById('login');if(lg)lg.hidden=true;
   resolveReady();return true;
  }
  window.MTG.start=start;
- window.MTG.switchCompany=()=>{LS.del('mtg.company');location.replace(location.pathname)};
+ window.MTG.switchCompany=()=>{LS.del('mtg.space');LS.del('mtg.company');location.replace(location.pathname)};
 })();
 
 </script>
 <script>
 {const LG={
- en:{title:'Meetings on demand',sub:'Enter your company name. Everyone who types the same name shares the same poles, products and meetings.',co:'Company name',nm:'Your name (shown on your requests)',warn:'Weak protection: anyone who knows the company name can see and change the data. Do not enter confidential information.',demo:'Demo mode: data stays in this browser until the database is configured.',go:'Enter',err:'Please enter a company name.'},
- fr:{title:'Meetings à la carte',sub:"Saisissez le nom de votre entreprise. Toutes les personnes qui saisissent le même nom partagent les mêmes pôles, produits et meetings.",co:"Nom de l'entreprise",nm:'Votre nom (affiché sur vos demandes)',warn:"Protection faible : toute personne qui connaît le nom de l'entreprise peut voir et modifier les données. N'y saisissez pas d'information confidentielle.",demo:"Mode démo : les données restent dans ce navigateur tant que la base n'est pas configurée.",go:'Entrer',err:"Saisissez un nom d'entreprise."}};
+ en:{title:'Meetings on demand',sub:'Enter your space name (for example a business domain). Everyone who types the same name shares the same poles, products and meetings.',co:'Space name',nm:'Your name (shown on your requests)',warn:'Weak protection: anyone who knows the space name can see and change the data. Do not enter confidential information.',demo:'Demo mode: data stays in this browser until the database is configured.',go:'Enter',err:'Please enter a space name.',closed:'The space « {x} » has been closed. Ask for its new name.'},
+ fr:{title:'Meetings à la carte',sub:"Saisissez le nom de votre espace (par exemple un grand domaine). Toutes les personnes qui saisissent le même nom partagent les mêmes pôles, produits et meetings.",co:"Nom de l'espace",nm:'Votre nom (affiché sur vos demandes)',warn:"Protection faible : toute personne qui connaît le nom de l'espace peut voir et modifier les données. N'y saisissez pas d'information confidentielle.",demo:"Mode démo : les données restent dans ce navigateur tant que la base n'est pas configurée.",go:'Entrer',err:"Saisissez un nom d'espace.",closed:"L'espace « {x} » a été fermé. Demandez son nouveau nom."}};
  const $=id=>document.getElementById(id);
  const paint=()=>{const lang=MTG.LS.get('mtg.lang')==='fr'?'fr':'en',L=LG[lang];
   $('lgTitle').textContent=L.title;document.title=L.title;$('lgSub').textContent=L.sub;$('lgCo').textContent=L.co;$('lgNm').textContent=L.nm;$('lgWarn').textContent=L.warn;$('lgDemo').textContent=L.demo;$('lgDemo').hidden=!MTG.demo;$('lgGo').textContent=L.go;
@@ -343,7 +401,9 @@ const FIREBASE_SDK = "10.12.2";
  $('lgNameIn').value=MTG.LS.get('mtg.name')||'';
  $('loginForm').addEventListener('submit',async e=>{e.preventDefault();const c=$('lgCompany').value.trim(),n=$('lgNameIn').value.trim();
   if(!MTG.slug(c)){$('lgErr').textContent=L.err;return}$('lgErr').textContent='';$('lgGo').disabled=true;await MTG.start(c,n);$('lgGo').disabled=false});
- const saved=MTG.LS.get('mtg.company'),urlCo=MTG.want.company,known=MTG.LS.get('mtg.name');
+ MTG.onClosed=x=>{$('login').hidden=false;$('lgCompany').value='';$('lgErr').textContent=L.closed.replace('{x}',x);$('lgCompany').focus()};
+ const cm=MTG.LS.get('mtg.closedMsg');if(cm){MTG.LS.del('mtg.closedMsg');setTimeout(()=>MTG.onClosed(cm))}
+ const saved=MTG.LS.get('mtg.space')||MTG.LS.get('mtg.company'),urlCo=MTG.want.space,known=MTG.LS.get('mtg.name');
  if(urlCo&&known)MTG.start(urlCo);                       // lien partagé, utilisateur connu : entrée directe
  else if(urlCo){$('login').hidden=false;$('lgCompany').value=urlCo;$('lgNameIn').required=true;$('lgNameIn').focus()} // nouvel utilisateur : nom à saisir
  else if(saved)MTG.start(saved);
@@ -380,7 +440,7 @@ en:{appTitle:'Meetings on demand',sub:"Ask for the meeting that is useful now; t
  vDeck:'Our deck',vCat:'Catalogue',vArch:'Archives',newN:'{n} new',copyLink:'Copy link',tCopied:'Link copied: it opens this company, pole and product.',inDeck:'In our deck',addDeck:'Add to our deck',rmDeck:'Remove from deck',notForUs:'Not for us',isNew:'New',rmBy:'Removed by {w} on {d}',asideBy:'Set aside by {w} on {d}',addedBy:'In the deck since {d} ({w})',dorm:'Dormant — keep it?',dormHint:'Not requested or held for {n} days (threshold: {t} days).',keep:'Keep',emDeck:'Your deck is empty',emDeckTxt:'Open the catalogue and add the meetings your team wants.',openCat:'Open the catalogue',emCat:'Every card is already in your deck.',emArch:'No archived card.',archive:'Archive',restore:'Restore',delPerm:'Delete permanently',confDelPerm:'Confirm: gone for every team, no undo',archBy:'Archived by {w} on {d}',dormSet:'Dormant cards',dormFactor:'Flag after N × the reference frequency',dormDays:'Cards without a regular frequency: flag after (days)',tAdded:'Added to your deck.',tRemoved:'Removed from your deck; still in the catalogue.',tKept:'Kept in the deck.',tArchived:'Card archived.',tRestored:'Card restored to the catalogue.',tAside:'Set aside; still in the catalogue.',
  tmeth:'Methods',mIntro:'Methods differ on three axes: rhythm (fixed iterations or continuous flow), level (team, several teams, portfolio) and what they optimise. They combine: a method per team, a coordination model across teams, banking governance on top. Cross-method cards (team retrospective, three amigos, post-mortem…) apply to every method and are not repeated below.',mRhythm:'Rhythm',mLevel:'Level',mOpt:'Optimises',mIdea:'Idea',mFit:'Best when',mWatch:'Watch out',mMeet:'Meetings in the catalogue',mSrc:'Reference',mGo:'Open these cards in the catalogue',lvlTeamOpt:'Every team (shared team card)',lvlTeam:'Shared team card',teamNeedsProd:'Team card: select a product to use it.',delProd:'Delete this product',delProdConf:'Confirm: deletes {n}, its {c} own cards, {r} requests and its deck. No undo.',tProdDel:'Product deleted.',delPole:'Delete this pole',delPoleConf:'Confirm: deletes {n}, its {p} products, {c} cards, {r} requests and all decks. No undo.',tPoleDel:'Pole deleted.',mLegend:'Plain: card available here · crossed out: archived · italic: exists in a product (tap to open it there) · dashed: not in this catalogue yet (tap to add it).',mAddT:'Add “{n}” to the {s} catalogue?',mAddTxt:'This card is not in the {s} catalogue yet. It will be copied from the reference catalogue into the catalogue only, not into your deck.',mAddGo:'Add to catalogue',mProdOnly:'Product-level card: select a product to add it.',onlyB:'One card opened from Methods.',showAll:'Show all cards',tAddedCat:'Added to the catalogue.',tSwitched:'Opened in {p}.',
  tSaved:'Saved.',tCreated:'Card created.',tUpdated:'Card updated.',tSent:'Request sent to the manager.',tSched:'Meeting scheduled.',tWithdrawn:'Request withdrawn.',tDeleted:'Card deleted.',tImported:'{n} cards imported.',missB:'{n} reference cards are not in this catalogue yet.',tPole:'Pole created.',tProd:'Product created.',eWrite:'Cannot write: shared data unavailable.',ePerm:'You are not allowed to change this data.',eSave:'Save failed ({c}).',eNameDef:'Name and definition are required.',eReason:'Please give a reason.',eDT:'Date and time are required.',
- foot:'Weak protection by design: anyone who types the same company name sees and edits the same data, and chooses their own role. Do not store confidential information.',coSwitch:'switch',wNoData:'Base de données injoignable. Vérifiez la connexion puis rechargez.',wSlow:'Data is slow to arrive; it may be incomplete.',wRead:'Cannot read data ({c}).'},
+ foot:'Weak protection by design: anyone who types the same space name sees and edits the same data, and chooses their own role. Do not store confidential information.',spBtn:'Space: {n}',spT:'Space',spCur:'You are in the space « {n} ». Everyone who types this name shares its data.',spSwitch:'Go to another space',spRen:'Rename this space',spRenHint:'All poles, products, cards, requests and decks move to the new name. By default the old name keeps working and redirects to the new one.',spNew:'New name',spConf:'Type the new name again',spCut:'Cut the old name',spCutHint:'Use this to change who has access: the old name will lead nowhere. You will have to give the new name to the teams yourself.',spGo:'Rename',spMgrOnly:'Only a manager can rename the space.',spErrMatch:'The two names differ.',spErrEmpty:'Enter a name.',spErrExists:'A space with this name already contains data. Choose another name.',spErrRules:'Renaming is not allowed by the database rules yet (Firestore rules to update).',spErr:'Renaming failed: {m}',spBusy:'Renaming…',spMoved:'The space « {a} » is now called « {b} ».',spLabel:'Space name updated.',spCutConf:'Confirm: rename and cut the old name (no redirection)',wNoData:'Base de données injoignable. Vérifiez la connexion puis rechargez.',wSlow:'Data is slow to arrive; it may be incomplete.',wRead:'Cannot read data ({c}).'},
 fr:{appTitle:'Meetings à la carte',sub:"Demandez le rituel utile au bon moment ; le manager le valide et le place au calendrier.",pole:'Pôle',prod:'Produit',wholePole:'Tout le pôle',addPole:'+ Pôle',addProd:'+ Produit',addPoleL:'Ajouter un pôle',addProdL:'Ajouter un produit à ce pôle',settings:'Méthodes & réglages',dev:'Développeur',mgr:'Manager',tcards:'Cartes',treq:'Demandes',tcal:'Calendrier',search:'Rechercher un meeting…',newCard:'Nouvelle carte',all:'Toutes',famL:'Catégorie',methL:'Méthode',methRec:'Recommandées pour {x}',methAll:'Toutes les méthodes',loading:'Chargement des cartes…',noPole:'Aucun pôle',noPoleTxt:'Créez un pôle (ex. Data) et ses produits (EDMS, Lake…) pour commencer.',noCards:'Aucune carte à ce niveau',noCardsTxt:'Partez du catalogue de référence ou créez vos propres cartes.',importBtn:'Importer le kit de départ',createCard:'Créer une carte',noMatch:'Aucune carte ne correspond à ces filtres.',ownBanner:"{p} n'a pas encore de cartes de niveau produit ; seules les cartes du pôle {o} sont affichées.",freq:'Fréquence',dur:'Durée',who:'Qui',trig:'Déclencheurs',lvlPole:'Pôle {p}',last:'Dernière tenue',next:'Prochaine',never:'jamais',pendingN:'{n} en attente',ask:'Demander',plan:'Planifier',edit:'Modifier',
  s_pending:'En attente',s_approved:'Planifié',s_rejected:'Refusé',s_cancelled:'Annulé',approve:'Valider et planifier',reject:'Refuser',replan:'Re-planifier',cancelM:'Annuler le meeting',withdraw:'Retirer',reqBy:'Demandé par {w}',on:' le ',wish:'souhaité vers le {d}',mgrNote:'Manager : ',you:'vous',member:'un membre',delCard:'Carte supprimée',
  secPendMgr:'À valider',secPendDev:'En attente de validation',emPendMgr:'Aucune demande en attente.',emPendDev:'Aucune demande en attente. Choisissez une carte et cliquez sur « Demander ».',secUp:'Planifiés à venir',emUp:'Rien de planifié pour le moment.',secHist:'Historique récent',emHist:"Pas encore d'historique.",
@@ -393,7 +453,7 @@ fr:{appTitle:'Meetings à la carte',sub:"Demandez le rituel utile au bon moment 
  vDeck:'Notre jeu',vCat:'Catalogue',vArch:'Archives',newN:'{n} nouvelles',copyLink:'Copier le lien',tCopied:'Lien copié : il ouvre cette entreprise, ce pôle et ce produit.',inDeck:'Dans notre jeu',addDeck:'Ajouter à notre jeu',rmDeck:'Retirer du jeu',notForUs:'Pas pour nous',isNew:'Nouvelle',rmBy:'Retirée par {w} le {d}',asideBy:'Écartée par {w} le {d}',addedBy:'Dans le jeu depuis le {d} ({w})',dorm:'Dormante — la garder ?',dormHint:'Ni demandée ni tenue depuis {n} jours (seuil : {t} jours).',keep:'Garder',emDeck:'Votre jeu est vide',emDeckTxt:'Ouvrez le catalogue et ajoutez les meetings qui intéressent votre équipe.',openCat:'Ouvrir le catalogue',emCat:'Toutes les cartes sont déjà dans votre jeu.',emArch:'Aucune carte archivée.',archive:'Archiver',restore:'Restaurer',delPerm:'Supprimer définitivement',confDelPerm:'Confirmer : disparaît pour toutes les équipes, sans retour',archBy:'Archivée par {w} le {d}',dormSet:'Cartes dormantes',dormFactor:'Signaler après N × la fréquence de référence',dormDays:'Cartes sans fréquence régulière : signaler après (jours)',tAdded:'Ajoutée à votre jeu.',tRemoved:'Retirée du jeu ; toujours dans le catalogue.',tKept:'Conservée dans le jeu.',tArchived:'Carte archivée.',tRestored:'Carte restaurée dans le catalogue.',tAside:'Écartée ; toujours dans le catalogue.',
  tmeth:'Méthodes',mIntro:"Les méthodes diffèrent sur trois axes : le rythme (itérations fixes ou flux continu), le niveau (équipe, plusieurs équipes, portefeuille) et ce qu'elles optimisent. Elles se combinent : une méthode par équipe, un modèle de coordination entre équipes, la gouvernance bancaire par-dessus. Les cartes « toutes méthodes » (rétrospective, three amigos, post-mortem…) valent pour chacune et ne sont pas répétées ci-dessous.",mRhythm:'Rythme',mLevel:'Niveau',mOpt:'Optimise',mIdea:'Principe',mFit:'Adaptée quand',mWatch:'Point de vigilance',mMeet:'Meetings du catalogue',mSrc:'Référence',mGo:'Voir ces cartes dans le catalogue',lvlTeamOpt:'Toutes les équipes (carte d’équipe partagée)',lvlTeam:'Carte d’équipe partagée',teamNeedsProd:'Carte d’équipe : sélectionnez un produit pour l’utiliser.',delProd:'Supprimer ce produit',delProdConf:'Confirmer : supprime {n}, ses {c} cartes propres, {r} demandes et son jeu. Sans retour.',tProdDel:'Produit supprimé.',delPole:'Supprimer ce pôle',delPoleConf:'Confirmer : supprime {n}, ses {p} produits, {c} cartes, {r} demandes et tous les jeux. Sans retour.',tPoleDel:'Pôle supprimé.',mLegend:'Normal : carte disponible ici · barrée : archivée · italique : existe dans un produit (toucher pour l’y ouvrir) · pointillés : pas encore dans ce catalogue (toucher pour l’ajouter).',mAddT:'Ajouter « {n} » au catalogue {s} ?',mAddTxt:"Cette carte n'est pas encore dans le catalogue {s}. Elle sera copiée depuis le catalogue de référence, dans le catalogue uniquement, pas dans votre jeu.",mAddGo:'Ajouter au catalogue',mProdOnly:'Carte de niveau produit : sélectionnez un produit pour l’ajouter.',onlyB:'Une carte ouverte depuis Méthodes.',showAll:'Voir toutes les cartes',tAddedCat:'Ajoutée au catalogue.',tSwitched:'Ouverte dans {p}.',
  tSaved:'Enregistré.',tCreated:'Carte créée.',tUpdated:'Carte mise à jour.',tSent:'Demande envoyée au manager.',tSched:'Meeting planifié.',tWithdrawn:'Demande retirée.',tDeleted:'Carte supprimée.',tImported:'{n} cartes importées.',missB:'{n} cartes de référence ne sont pas encore dans ce catalogue.',tPole:'Pôle créé.',tProd:'Produit créé.',eWrite:'Écriture impossible : données partagées indisponibles.',ePerm:"Vous n'avez pas le droit de modifier ces données.",eSave:"Échec de l'enregistrement ({c}).",eNameDef:'Le nom et la définition sont requis.',eReason:'Indiquez le motif de la demande.',eDT:'Date et heure requises.',
- foot:"Protection faible, voulue : toute personne qui saisit le même nom d'entreprise voit et modifie les mêmes données, et choisit son rôle. N'y stockez pas d'information confidentielle.",coSwitch:'changer',wNoData:'Les données partagées ne sont pas accessibles depuis cette vue (connexion à claude.ai requise).',wSlow:'Les données tardent à arriver ; elles peuvent être incomplètes.',wRead:'Lecture des données impossible ({c}).'}};
+ foot:"Protection faible, voulue : toute personne qui saisit le même nom d'espace voit et modifie les mêmes données, et choisit son rôle. N'y stockez pas d'information confidentielle.",spBtn:'Espace : {n}',spT:'Espace',spCur:"Vous êtes dans l'espace « {n} ». Toutes les personnes qui saisissent ce nom partagent ses données.",spSwitch:'Aller dans un autre espace',spRen:'Renommer cet espace',spRenHint:"Pôles, produits, cartes, demandes et jeux passent sous le nouveau nom. Par défaut, l'ancien nom continue de fonctionner et redirige vers le nouveau.",spNew:'Nouveau nom',spConf:'Retapez le nouveau nom',spCut:"Couper l'ancien nom",spCutHint:"Pour changer qui a accès : l'ancien nom ne mènera plus nulle part. Vous devrez communiquer vous-même le nouveau nom aux équipes.",spGo:'Renommer',spMgrOnly:"Seul un manager peut renommer l'espace.",spErrMatch:'Les deux noms diffèrent.',spErrEmpty:'Saisissez un nom.',spErrExists:'Un espace de ce nom contient déjà des données. Choisissez un autre nom.',spErrRules:"Les règles de la base n'autorisent pas encore le renommage (règles Firestore à mettre à jour).",spErr:'Échec du renommage : {m}',spBusy:'Renommage…',spMoved:"L'espace « {a} » s'appelle désormais « {b} ».",spLabel:"Nom de l'espace mis à jour.",spCutConf:"Confirmer : renommer et couper l'ancien nom (sans redirection)",wNoData:'Les données partagées ne sont pas accessibles depuis cette vue (connexion à claude.ai requise).',wSlow:'Les données tardent à arriver ; elles peuvent être incomplètes.',wRead:'Lecture des données impossible ({c}).'}};
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad=n=>String(n).padStart(2,'0');
@@ -487,7 +547,7 @@ function render(){
  if(window.MTG&&MTG.syncUrl)MTG.syncUrl();
  $('#sub').textContent=tr('sub');$('header h1').textContent=tr('appTitle');document.title=tr('appTitle');$('#lPole').textContent=tr('pole');$('#lProd').textContent=tr('prod');
  for(const[k,v]of[['#addPole','addPoleL'],['#addProd','addProdL']]){$(k).title=tr(v);$(k).setAttribute('aria-label',tr(v))}$('#settings').textContent=tr('settings');
- $('#q').placeholder=tr('search');$('#q').setAttribute('aria-label',tr('search'));$('#newCard').textContent=tr('newCard');$('#foot').textContent=tr('foot');if(window.MTG&&MTG.company){$('#coBtn').textContent=MTG.company+(MTG.demo?' (demo)':'')+' · '+tr('coSwitch');}
+ $('#q').placeholder=tr('search');$('#q').setAttribute('aria-label',tr('search'));$('#newCard').textContent=tr('newCard');$('#foot').textContent=tr('foot');if(window.MTG&&MTG.company){$('#coBtn').textContent=tr('spBtn',{n:MTG.company+(MTG.demo?' (demo)':'')});}
  $('[data-role=dev]').textContent=tr('dev');$('[data-role=mgr]').textContent=tr('mgr');
  $('#pole').innerHTML=poles.length?poles.map(p=>`<option value="${esc(p.id)}"${p.id===S.pole?' selected':''}>${esc(p.name)}</option>`).join(''):`<option>${tr('noPole')}</option>`;
  $('#prod').innerHTML=`<option value="">${tr('wholePole')}</option>`+prods.map(p=>`<option value="${esc(p.id)}"${p.id===S.prod?' selected':''}>${esc(p.name)}</option>`).join('');
@@ -830,8 +890,31 @@ $('#newCard').addEventListener('click',()=>cardForm());
 $('#addPole').addEventListener('click',poleForm);
 $('#addProd').addEventListener('click',prodForm);
 $('#settings').addEventListener('click',settingsForm);
-$('#coBtn').addEventListener('click',()=>window.MTG&&MTG.switchCompany());
-MTG.linkUrl=()=>{const q=new URLSearchParams();q.set('company',MTG.company);const po=poleOf(S.pole),pr=S.prod&&prodOf(S.prod);if(po)q.set('pole',po.name);if(pr)q.set('product',pr.name);return location.pathname+'?'+q.toString()};
+$('#coBtn').addEventListener('click',spaceForm);
+function spaceForm(){const mgr=isMgr();
+ open(`<form class="f"><h2>${tr('spT')}</h2><p class="sub">${esc(tr('spCur',{n:MTG.company}))}</p>
+  <div><button type="button" class="btn" id="spSwitch">${tr('spSwitch')}</button></div>
+  ${mgr?`<fieldset><legend>${tr('spRen')}</legend><p class="hint">${esc(tr('spRenHint'))}</p>
+  <label>${tr('spNew')}<input name="nn" autocomplete="off"></label><label>${tr('spConf')}<input name="nc" autocomplete="off"></label>
+  <label class="chk"><input type="checkbox" name="cut">${tr('spCut')}</label><p class="hint">${esc(tr('spCutHint'))}</p>
+  <p class="hint" id="spErr" style="color:var(--ko)"></p></fieldset>`:`<p class="hint">${tr('spMgrOnly')}</p>`}
+  <div class="dacts"><button type="button" class="btn" data-act="close">${tr('close')}</button>${mgr?`<button class="btn pri" id="spGo">${tr('spGo')}</button>`:''}</div></form>`,
+ mgr?async()=>{const e=$('#spErr'),g=$('#spGo'),nn=val('nn'),cut=val('cut');e.textContent='';
+  if(!MTG.slug(nn)){e.textContent=tr('spErrEmpty');return}
+  if(nn!==val('nc')){e.textContent=tr('spErrMatch');return}
+  if(cut&&!g.dataset.confirm){g.dataset.confirm='1';g.textContent=tr('spCutConf');return}
+  g.disabled=true;g.textContent=tr('spBusy');
+  try{const old=MTG.company,r=await MTG.renameSpace(nn,cut);
+   if(r==='label'){MTG.company=nn;MTG.LS.set('mtg.space',nn);close();render();toast(tr('spLabel'))}
+   else{MTG.LS.set('mtg.space',nn);MTG.LS.set('mtg.notice',JSON.stringify({from:old,to:nn}));MTG.goSpace(nn)}}
+  catch(x){g.disabled=false;g.textContent=tr('spGo');delete g.dataset.confirm;
+   e.textContent=x&&x.code==='exists'?tr('spErrExists'):x&&x.code==='permission-denied'?tr('spErrRules'):tr('spErr',{m:(x&&(x.message||x.code))||String(x)})}}:null);
+ $('#spSwitch').addEventListener('click',()=>MTG.switchCompany());
+ const c=dlg.querySelector('[name=cut]');if(c)c.addEventListener('change',()=>{const g=$('#spGo');delete g.dataset.confirm;g.textContent=tr('spGo')});
+}
+MTG.onName=()=>render();
+setTimeout(()=>{const n=MTG.takeNotice&&MTG.takeNotice();if(n&&n.from!==n.to)toast(tr('spMoved',{a:n.from,b:n.to}))},700);
+MTG.linkUrl=()=>{const q=new URLSearchParams();q.set('space',MTG.company);const po=poleOf(S.pole),pr=S.prod&&prodOf(S.prod);if(po)q.set('pole',po.name);if(pr)q.set('product',pr.name);return location.pathname+'?'+q.toString()};
 MTG.syncUrl=()=>{try{if(!MTG.company||!S.got.poles||!S.got.products||(MTG.want&&(MTG.want.pole||MTG.want.prod)))return;const u=MTG.linkUrl();if(u!==location.pathname+location.search)history.replaceState(null,'',u)}catch(e){}};
 $('#pole').addEventListener('change',e=>{S.only=null;S.pole=e.target.value;S.prod='';store('pole',S.pole);store('prod','');render()});
 $('#prod').addEventListener('change',e=>{S.only=null;S.prod=e.target.value;store('prod',S.prod);render()});

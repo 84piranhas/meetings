@@ -1,13 +1,14 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Un espace par entreprise : tenants/<nom-normalisé>/<collection>/<document>
-    // Protection faible, voulue : quiconque connaît le nom de l'entreprise lit et écrit.
-    // On ne peut pas lister les entreprises (aucune règle sur /tenants lui-même).
+    // Un espace par nom saisi : tenants/<nom-normalisé>/<collection>/<document>
+    // Protection faible, voulue : quiconque connaît le nom de l'espace lit et écrit.
+    // On ne peut pas lister les espaces (aucune règle sur /tenants lui-même).
     match /tenants/{tenant}/{coll}/{docId} {
       allow read, write: if tenant.size() <= 80
-        && coll in ['poles', 'products', 'cards', 'requests', 'deck', 'members'];
+        && coll in ['poles', 'products', 'cards', 'requests', 'deck', 'members', 'meta'];
     }
+    // meta/info : nom affiché, ou redirection (movedTo) / fermeture (closed) après un renommage.
     // Tout le reste est refusé par défaut.
   }
 }
