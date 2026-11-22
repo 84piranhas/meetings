@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Test réseau Firebase</title>
+<style>
+/* VOICE: diagnostic sobre, lisible par un ingénieur comme par un directeur
+   IDEA: une liste de contrôle d'avant-vol, chaque ligne passe au vert ou au rouge
+   PICTURE: la liste de tests elle-même, avec le verdict en tête
+   COLOUR and TYPE: graphite + bleu d'accent (thème du site), vert / rouge pour les résultats ; police système
+   LAYOUT: une colonne, 760px max */
+:root{color-scheme:light dark;--bg:light-dark(#f3f4f6,#0a0d12);--ink:light-dark(#0e1116,#e7eaee);--mut:light-dark(#5b6472,#94a0ae);--line:light-dark(#d8dce2,#232b36);--card:light-dark(#fff,#11161e);--acc:light-dark(#1f5bff,#6b96ff);--ok:light-dark(#17784f,#5fd39c);--ko:light-dark(#b42318,#ff8a7f);--warn:light-dark(#8a5a00,#ffc46b)}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:#12171e;color:#e7eaee;padding:22px max(4vw,16px)}
+header h1{margin:0;font-size:clamp(24px,3vw,30px);line-height:1.15}
+header p{margin:6px 0 0;opacity:.75;max-width:70ch}
+main{max-width:760px;margin:0 auto;padding:22px max(4vw,16px) 48px}
+.verdict{border-radius:4px;padding:14px 16px;margin-bottom:18px;font-weight:600;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--mut)}
+.verdict.ok{border-left-color:var(--ok)}.verdict.ko{border-left-color:var(--ko)}.verdict.warn{border-left-color:var(--warn)}
+ol{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+li{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:12px 14px;display:grid;grid-template-columns:28px minmax(0,1fr);gap:4px 10px}
+.st{font-weight:700;font-size:18px;line-height:1.3;text-align:center}
+.st.ok{color:var(--ok)}.st.ko{color:var(--ko)}.st.warn{color:var(--warn)}.st.run{color:var(--mut)}
+li b{font-weight:600}
+li .d{grid-column:2;font-size:14px;color:var(--mut);overflow-wrap:anywhere}
+li a{color:var(--acc)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}
+button{font:inherit;font-size:15px;font-weight:600;border-radius:3px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px;min-height:42px;cursor:pointer}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:12px;font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}
+details{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:12px 14px;margin-top:18px}
+summary{font-weight:600;cursor:pointer;min-height:28px}
+textarea{width:100%;min-height:130px;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--line);border-radius:3px;padding:10px;background:var(--bg);color:var(--ink)}
+.hint{font-size:14px;color:var(--mut)}
+</style>
+</head>
+<body>
+<header>
+ <h1>Test réseau Firebase</h1>
+ <p>Cette page vérifie que votre poste peut joindre les services nécessaires au site « Meetings à la carte » : hébergement, bibliothèque Firebase et base Cloud Firestore.</p>
+</header>
+<main>
+ <div class="verdict" id="verdict">Tests en cours…</div>
+ <ol id="tests"></ol>
+ <div class="bar"><button class="pri" id="copy" type="button">Copier le rapport</button><button id="rerun" type="button">Relancer les tests</button></div>
+ <pre id="report" hidden></pre>
+ <details id="fullBox">
+  <summary>Test complet avec un vrai projet Firebase (facultatif)</summary>
+  <p class="hint">Collez l'objet <code>firebaseConfig</code> de votre projet. Le test écrit, relit, écoute en temps réel puis supprime un document témoin dans <code>tenants/_connectivity-check/members</code>, chemin autorisé par les règles fournies.</p>
+  <textarea id="cfg" spellcheck="false" placeholder='{ apiKey: "…", authDomain: "…", projectId: "…", appId: "…" }'></textarea>
+  <div class="bar"><button class="pri" id="full" type="button">Lancer le test complet</button></div>
+  <ol id="fullTests"></ol>
+ </details>
+</main>
+<script type="module">
+const SDK='10.12.2', BASE=`https://www.gstatic.com/firebasejs/${SDK}/`;
+const FS_URL='https://firestore.googleapis.com/v1/projects/connectivity-check-0000/databases/(default)/documents/probe/x';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const timeout=(p,ms)=>Promise.race([p,new Promise((_,r)=>setTimeout(()=>r(Object.assign(new Error('délai dépassé ('+ms/1000+' s)'),{timeout:true})),ms))]);
+const MARK={ok:'✓',ko:'✗',warn:'?',run:'…'};
+let results=[];
+
+function row(list,t){const li=document.createElement('li');li.innerHTML=`<span class="st run">…</span><b>${esc(t.t)}</b><span class="d">en cours</span>`;list.appendChild(li);
+ return (st,d,html)=>{li.querySelector('.st').className='st '+st;li.querySelector('.st').textContent=MARK[st];li.querySelector('.d').innerHTML=html||esc(d)}}
+
+// 1) Hébergement : si cette page s'affiche, le domaine d'hébergement passe
+async function tHost(){return {st:'ok',d:'Page chargée depuis '+location.host}}
+// 2) Bibliothèque Firebase sur le CDN de Google
+let A=null,F=null;
+async function tCdn(){A=await timeout(import(BASE+'firebase-app.js'),15000);F=await timeout(import(BASE+'firebase-firestore.js'),15000);return {st:'ok',d:'SDK Firebase '+SDK+' chargé depuis www.gstatic.com'}}
+// 3) Domaine Cloud Firestore : une réponse d'erreur JSON de Google (projet fictif) prouve que le domaine est joignable
+async function tFirestore(){
+ try{const r=await timeout(fetch(FS_URL,{cache:'no-store'}),15000);const txt=await r.text();let j=null;try{j=JSON.parse(txt)}catch(e){}
+  if(j&&j.error)return {st:'ok',d:`firestore.googleapis.com joignable (réponse Google attendue : HTTP ${r.status} ${j.error.status||''})`};
+  return {st:'ko',d:`Réponse inattendue (HTTP ${r.status}, ${r.headers.get('content-type')||'type inconnu'}) : probablement une page du proxy. Début : ${txt.slice(0,120)}`};
+ }catch(e){
+  // Deuxième essai sans lecture de la réponse : un échec ici = blocage réseau certain
+  try{await timeout(fetch(FS_URL,{mode:'no-cors',cache:'no-store'}),15000);
+   return {st:'warn',d:'Le serveur répond mais la réponse est illisible : blocage ou réécriture par le proxy probable.',html:`Le serveur répond mais la réponse est illisible : blocage ou réécriture par le proxy probable. Ouvrez <a href="${FS_URL}" target="_blank" rel="noopener">ce lien</a> : un message d'erreur JSON de Google est normal (domaine autorisé) ; une page de votre proxy signifie un blocage.`}}
+  catch(e2){return {st:'ko',d:'firestore.googleapis.com injoignable ('+(e2.message||e.message)+') : bloqué par le réseau ou le proxy.'}}
+ }}
+// 4) Polices (confort visuel uniquement)
+async function tFonts(){const r=await timeout(fetch('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans&display=swap'),10000);
+ return r.ok?{st:'ok',d:'fonts.googleapis.com joignable (non indispensable)'}:{st:'warn',d:'HTTP '+r.status+' (non indispensable : le site utilisera une police système)'}}
+
+const TESTS=[
+ {t:'Hébergement du site',run:tHost,key:true},
+ {t:'Bibliothèque Firebase (www.gstatic.com)',run:tCdn,key:true},
+ {t:'Base Cloud Firestore (firestore.googleapis.com)',run:tFirestore,key:true},
+ {t:'Polices Google (fonts.googleapis.com) — facultatif',run:tFonts,key:false}];
+
+async function runAll(){
+ $('tests').innerHTML='';results=[];$('verdict').className='verdict';$('verdict').textContent='Tests en cours…';
+ for(const t of TESTS){const set=row($('tests'),t);let r;
+  try{r=await t.run()}catch(e){r={st:'ko',d:(e.timeout?'Aucune réponse : ':'Échec : ')+(e.message||e)}}
+  set(r.st,r.d,r.html);results.push({t:t.t,key:t.key,...r})}
+ const keys=results.filter(r=>r.key);
+ const v=keys.some(r=>r.st==='ko')?['ko','Au moins un service indispensable est bloqué : le site ne fonctionnera pas depuis ce poste en l’état.']
+  :keys.some(r=>r.st==='warn')?['warn','Résultat incertain : suivez l’indication de la ligne marquée « ? », ou lancez le test complet.']
+  :['ok','Les services indispensables sont joignables. Pour confirmer le temps réel derrière votre proxy, lancez le test complet avec un vrai projet.'];
+ $('verdict').className='verdict '+v[0];$('verdict').textContent=v[1];
+}
+
+// Test complet : écriture, lecture serveur, écoute temps réel, suppression
+function parseCfg(s){const m=s.match(/\{[\s\S]*\}/);if(!m)throw new Error('objet de configuration introuvable');
+ return Function('"use strict";return ('+m[0]+')')()}
+async function runFull(){
+ const list=$('fullTests');list.innerHTML='';
+ let cfg;try{cfg=parseCfg($('cfg').value)}catch(e){row(list,{t:'Lecture de la configuration'})('ko','Configuration illisible : '+e.message);return}
+ const steps=[];const step=async(t,fn)=>{const set=row(list,{t});try{const d=await fn();set('ok',d);steps.push({t,st:'ok',d});return true}catch(e){const d=(e.code?e.code+' : ':'')+(e.message||e);set('ko',d);steps.push({t,st:'ko',d});return false}};
+ if(!F&&!(await step('Chargement du SDK',async()=>{await tCdn();return 'OK'})))return;
+ const app=A.initializeApp(cfg,'check-'+Date.now());const db=F.initializeFirestore(app,{});
+ const id='probe-'+Math.random().toString(36).slice(2,8);const ref=F.doc(db,'tenants/_connectivity-check/members/'+id);
+ if(!await step('Écriture d’un document témoin',()=>timeout(F.setDoc(ref,{name:'connectivity check',at:new Date().toISOString()}),20000).then(()=>'écrit')))return;
+ await step('Relecture depuis le serveur',()=>timeout(F.getDocFromServer(ref),20000).then(s=>s.exists()?'relu':'introuvable'));
+ await step('Écoute en temps réel (canal Listen)',()=>timeout(new Promise((res,rej)=>{const u=F.onSnapshot(ref,s=>{if(!s.metadata.fromCache){u();res('mise à jour reçue du serveur')}},rej)}),20000));
+ await step('Suppression du document témoin',()=>timeout(F.deleteDoc(ref),20000).then(()=>'supprimé'));
+ results.push(...steps.map(s=>({t:'[complet] '+s.t,...s})));
+}
+
+$('rerun').addEventListener('click',runAll);
+$('full').addEventListener('click',runFull);
+$('copy').addEventListener('click',async()=>{
+ const txt=['Test réseau Firebase — '+new Date().toLocaleString('fr-FR'),'Navigateur : '+navigator.userAgent,'Verdict : '+$('verdict').textContent,'',...results.map(r=>`[${MARK[r.st]}] ${r.t} — ${r.d}`)].join('\n');
+ const pre=$('report');pre.textContent=txt;pre.hidden=false;
+ try{await navigator.clipboard.writeText(txt);$('copy').textContent='Rapport copié'}catch(e){$('copy').textContent='Copiez le rapport ci-dessous'}
+});
+runAll();
+</script>
+</body>
+</html>
