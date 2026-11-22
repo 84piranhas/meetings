@@ -329,7 +329,7 @@ const FIREBASE_SDK = "10.12.2";
   resolveReady();return true;
  }
  window.MTG.start=start;
- window.MTG.switchCompany=()=>{LS.del('mtg.company');location.reload()};
+ window.MTG.switchCompany=()=>{LS.del('mtg.company');location.replace(location.pathname)};
 })();
 
 </script>
@@ -487,6 +487,7 @@ function render(){
  const poles=[...S.poles].sort((a,b)=>String(a.name).localeCompare(b.name));
  if(poles.length&&!poles.some(p=>p.id===S.pole))S.pole=poles[0].id;
  const prods=poleProds();if(S.got.products&&S.prod&&!prods.some(p=>p.id===S.prod))S.prod='';
+ if(window.MTG&&MTG.syncUrl)MTG.syncUrl();
  $('#sub').textContent=tr('sub');$('header h1').textContent=tr('appTitle');document.title=tr('appTitle');$('#lPole').textContent=tr('pole');$('#lProd').textContent=tr('prod');
  $('#addPole').textContent=tr('addPole');$('#addProd').textContent=tr('addProd');$('#settings').textContent=tr('settings');
  $('#q').placeholder=tr('search');$('#q').setAttribute('aria-label',tr('search'));$('#newCard').textContent=tr('newCard');$('#foot').textContent=tr('foot');if(window.MTG&&MTG.company){$('#linkBtn').textContent=tr('copyLink');$('#coBtn').textContent=MTG.company+(MTG.demo?' (demo)':'')+' · '+tr('coSwitch');}
@@ -833,7 +834,9 @@ $('#addPole').addEventListener('click',poleForm);
 $('#addProd').addEventListener('click',prodForm);
 $('#settings').addEventListener('click',settingsForm);
 $('#coBtn').addEventListener('click',()=>window.MTG&&MTG.switchCompany());
-$('#linkBtn').addEventListener('click',async()=>{const q=new URLSearchParams();q.set('company',MTG.company);const po=poleOf(S.pole),pr=S.prod&&prodOf(S.prod);if(po)q.set('pole',po.name);if(pr)q.set('product',pr.name);const u=location.origin+location.pathname+'?'+q.toString();try{await navigator.clipboard.writeText(u);toast(tr('tCopied'))}catch(e){open(`<div><h2>${tr('copyLink')}</h2><p class="sub" style="user-select:all;overflow-wrap:anywhere">${esc(u)}</p><div class="dacts"><button class="btn pri" data-act="close">${tr('close')}</button></div></div>`,null)}});
+MTG.linkUrl=()=>{const q=new URLSearchParams();q.set('company',MTG.company);const po=poleOf(S.pole),pr=S.prod&&prodOf(S.prod);if(po)q.set('pole',po.name);if(pr)q.set('product',pr.name);return location.pathname+'?'+q.toString()};
+MTG.syncUrl=()=>{try{if(!MTG.company||!S.got.poles||!S.got.products||(MTG.want&&(MTG.want.pole||MTG.want.prod)))return;const u=MTG.linkUrl();if(u!==location.pathname+location.search)history.replaceState(null,'',u)}catch(e){}};
+$('#linkBtn').addEventListener('click',async()=>{const u=location.origin+MTG.linkUrl();try{await navigator.clipboard.writeText(u);toast(tr('tCopied'))}catch(e){open(`<div><h2>${tr('copyLink')}</h2><p class="sub" style="user-select:all;overflow-wrap:anywhere">${esc(u)}</p><div class="dacts"><button class="btn pri" data-act="close">${tr('close')}</button></div></div>`,null)}});
 $('#pole').addEventListener('change',e=>{S.only=null;S.pole=e.target.value;S.prod='';store('pole',S.pole);store('prod','');render()});
 $('#prod').addEventListener('change',e=>{S.only=null;S.prod=e.target.value;store('prod',S.prod);render()});
 $('#q').addEventListener('input',e=>{S.only=null;S.q=e.target.value;drawGrid()});
