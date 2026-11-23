@@ -284,6 +284,11 @@ const FIREBASE_SDK = "10.12.2";
  window.claude={use:n=>READY.then(()=>n==='db'?DB:n==='user'?USER:null)};
  const demo=!FIREBASE_CONFIG.projectId;
  const Q=new URLSearchParams(location.search);
+ // Langue et rôle passés dans l'URL (?lang=en|fr&role=developer|manager) : ils priment sur les préférences mémorisées
+ {const n=v=>slug(v||'');const lg=n(Q.get('lang')),ro=n(Q.get('role'));
+  const L={en:'en',english:'en',anglais:'en',fr:'fr',french:'fr',francais:'fr'}[lg];
+  const R={developer:'dev',dev:'dev',developpeur:'dev',manager:'mgr',mgr:'mgr'}[ro];
+  if(L)LS.set('mtg.lang',L);if(R)LS.set('mtg.role',R)}
  window.MTG={uid,slug,LS,demo,company:null,want:{space:(Q.get('space')||'').trim(),pole:(Q.get('pole')||'').trim()||null,prod:(Q.get('product')||'').trim()||null}};
 
  // ---------- Mode démo : stockage local, même API ----------
@@ -1031,7 +1036,7 @@ function spaceForm(){const mgr=isMgr();
 }
 MTG.onName=()=>render();
 setTimeout(()=>{const n=MTG.takeNotice&&MTG.takeNotice();if(n&&n.from!==n.to)toast(tr('spMoved',{a:n.from,b:n.to}));const n2=MTG.LS.get('mtg.notice2');if(n2){MTG.LS.del('mtg.notice2');toast(n2)}},700);
-MTG.linkUrl=()=>{const q=new URLSearchParams();q.set('space',MTG.company);const po=poleOf(S.pole),pr=S.prod&&prodOf(S.prod);if(po)q.set('pole',po.name);if(pr)q.set('product',pr.name);return location.pathname+'?'+q.toString()};
+MTG.linkUrl=()=>{const q=new URLSearchParams();q.set('space',MTG.company);const po=poleOf(S.pole),pr=S.prod&&prodOf(S.prod);if(po)q.set('pole',po.name);if(pr)q.set('product',pr.name);q.set('lang',S.lang);q.set('role',S.role==='mgr'?'manager':'developer');return location.pathname+'?'+q.toString()};
 MTG.syncUrl=()=>{try{if(!MTG.company||!S.got.poles||!S.got.products||(MTG.want&&(MTG.want.pole||MTG.want.prod)))return;const u=MTG.linkUrl();if(u!==location.pathname+location.search)history.replaceState(null,'',u)}catch(e){}};
 $('#pole').addEventListener('change',e=>{S.only=null;S.pole=e.target.value;S.prod='';store('pole',S.pole);store('prod','');render()});
 $('#prod').addEventListener('change',e=>{S.only=null;S.prod=e.target.value;store('prod',S.prod);render()});
