@@ -580,7 +580,7 @@ function findTerm(v){const t=String(v||'').trim(),n=sl(t);if(!n)return null;let 
  g=GL.find(g=>['en','fr'].some(L=>(g[L].p||[]).some(p=>{try{return new RegExp('^(?:'+p+')$','iu').test(t)}catch(e){return false}})));if(g)return g.k;
  g=GL.find(g=>['en','fr'].some(L=>sl(g[L].t)===n||sl(g[L].t).split('-').join('').startsWith(n.split('-').join(''))));return g?g.k:null}
 function focusNow(){const f=S.focus;if(!f)return;const el=document.getElementById(f.method?'md-'+f.method:'gl-'+f.term);
- if(el){el.scrollIntoView({block:f.method?'start':'center',behavior:'smooth'});el.classList.add('hl');setTimeout(()=>el.classList.remove('hl'),2200)}}
+ if(el)el.scrollIntoView({block:f.method?'start':'center',behavior:'smooth'})}
 function setFocus(f){S.focus=f;S.glq='';S.tab='methods';if(location.hash!=='#methods')history.replaceState(null,'',location.pathname+location.search+'#methods');render();setTimeout(focusNow,120)}
 function applyFocus(){const w=window.MTG&&MTG.want;if(!w||(!w.method&&!w.term))return;let f=null;
  if(w.method){const k=findMethod(w.method);if(k)f={method:k}}else{const k=findTerm(w.term);if(k)f={term:k}}
@@ -768,7 +768,7 @@ function glRows(q){const qn=glN((q||'').trim());const items=glRanked(q||'');let 
  const grp={0:'glInT',1:'glInT',2:'glInD',3:'glInM'};
  for(const {g,x,tier} of items){
   if(qn&&grp[tier]!==prev){prev=grp[tier];const n=items.filter(e=>grp[e.tier]===prev).length;h+=`<div class="ggrp">${esc(tr(prev))} (${n})</div>`}
-  h+=`<div class="ge${tier===0||tier===1?' gtop':''}" id="gl-${esc(g.k)}"><div class="gt"><b><button type="button" class="lnk ttl" data-tfocus="${esc(g.k)}" title="${esc(tr('focusT'))}">${glMark(x.t,qn)}</button></b> <span class="tag">${glMark(methName(g.m),tier===3?qn:'')}</span></div><p>${glMark(x.d,qn)}${g.src?` <a href="${esc(g.src)}" target="_blank" rel="noopener">${tr('mSrc')} ↗</a>`:''}</p></div>`}
+  h+=`<div class="ge${tier===0||tier===1?' gtop':''}${S.focus&&S.focus.term===g.k?' hl':''}" id="gl-${esc(g.k)}"><div class="gt"><b><button type="button" class="lnk ttl" data-tfocus="${esc(g.k)}" title="${esc(tr('focusT'))}">${glMark(x.t,qn)}</button></b> <span class="tag">${glMark(methName(g.m),tier===3?qn:'')}</span></div><p>${glMark(x.d,qn)}${g.src?` <a href="${esc(g.src)}" target="_blank" rel="noopener">${tr('mSrc')} ↗</a>`:''}</p></div>`}
  return {h,n:items.length}}
 function glList(){const r=glRows(S.glq||'');
  return `<section class="gloss"><h2 id="glossary">${tr('glT')}</h2><p class="intro">${esc(tr('glIntro'))}</p>
@@ -794,7 +794,7 @@ function drawMethods(){
  const foc=document.activeElement&&document.activeElement.id==='glq'?[document.activeElement.selectionStart,document.activeElement.selectionEnd]:null;
  v.innerHTML=`<p class="intro">${esc(tr('mIntro'))}</p><p class="legend2">${esc(tr('mLegend'))} <button type="button" class="lnk" data-glgo="">${tr('glT')} ↓</button></p><div class="mgrid">`+MDOC.map(m=>{const x=m[L];const sn=new Set();
   const cards=CAT.filter(c=>c.m.includes(m.k));
-  return `<article class="md" id="md-${m.k}"><h3><button type="button" class="lnk ttl" data-mfocus="${m.k}" title="${esc(tr('focusT'))}">${esc(methName(m.k))}</button></h3>
+  return `<article class="md${S.focus&&S.focus.method===m.k?' hl':''}" id="md-${m.k}"><h3><button type="button" class="lnk ttl" data-mfocus="${m.k}" title="${esc(tr('focusT'))}">${esc(methName(m.k))}</button></h3>
   <dl class="kv"><dt>${tr('mRhythm')}</dt><dd>${gl(x.r,sn)}</dd><dt>${tr('mLevel')}</dt><dd>${gl(x.l,sn)}</dd><dt>${tr('mOpt')}</dt><dd>${gl(x.o,sn)}</dd></dl>
   <div><div class="lbl">${tr('mIdea')}</div><p>${gl(x.i,sn)}</p></div>
   <div><div class="lbl">${tr('mFit')}</div><p>${gl(x.f,sn)}</p></div>
@@ -986,7 +986,7 @@ document.addEventListener('mouseout',e=>{const el=e.target.closest&&e.target.clo
 tip.addEventListener('mouseleave',e=>{if(!tipPin&&!(e.relatedTarget&&e.relatedTarget.closest&&e.relatedTarget.closest('.gl')))hideTip()});
 document.addEventListener('click',e=>{const el=e.target.closest('.gl');if(el){e.preventDefault();if(tipFor===el&&tipPin)hideTip();else showTip(el,true);return}
  const go=e.target.closest('[data-glgo]');if(go){e.preventDefault();hideTip();const k=go.dataset.glgo;if(k){S.glq='';S.focus={term:k}}
-  const jump=()=>{const t=document.getElementById(k?'gl-'+k:'glossary');if(t){t.scrollIntoView({block:k?'center':'start',behavior:'smooth'});if(k){t.classList.add('hl');setTimeout(()=>t.classList.remove('hl'),1800)}}};
+  const jump=()=>{const t=document.getElementById(k?'gl-'+k:'glossary');if(t){t.scrollIntoView({block:k?'center':'start',behavior:'smooth'});if(k)t.classList.add('hl')}};
   if(S.tab!=='methods'){location.hash='methods';setTimeout(jump,80)}else{if(k){const q=$('#glq');if(q)q.value='';glFilter()}if(window.MTG&&MTG.syncUrl)MTG.syncUrl();jump()}return}
  if(!tip.hidden&&!tip.contains(e.target))hideTip()});
 document.addEventListener('click',e=>{const m=e.target.closest('[data-mfocus]'),t=e.target.closest('[data-tfocus]');if(m){e.preventDefault();setFocus({method:m.dataset.mfocus})}else if(t){e.preventDefault();setFocus({term:t.dataset.tfocus})}});
